@@ -1,120 +1,149 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: 'Space Grotesk';
+  src: url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+}
+
 :root {
-  --background: #030303;
+  --background: #050505;
   --foreground: #ffffff;
-  --primary: #06b6d4;
-  --secondary: #ec4899;
-  --accent: #06b6d4;
-  --card: rgba(10, 10, 10, 0.6);
-  --border: rgba(255, 255, 255, 0.08);
-  --neon-cyan: #06b6d4;
-  --neon-pink: #ec4899;
-  --glow-cyan: rgba(6, 182, 212, 0.4);
-  --glow-pink: rgba(236, 72, 153, 0.4);
+  --brand-cyan: #00f2ff;
+  --brand-pink: #ff007a;
+  --brand-purple: #7000ff;
+  --card-bg: rgba(10, 10, 10, 0.4);
+  --border-glow: rgba(0, 242, 255, 0.15);
 }
 
 @theme {
-  --color-brand-cyan: #06b6d4;
-  --color-brand-pink: #ec4899;
-  --color-dark-bg: #030303;
+  --color-brand-cyan: var(--brand-cyan);
+  --color-brand-pink: var(--brand-pink);
+  --color-brand-purple: var(--brand-purple);
+  --color-dark-bg: var(--background);
 }
 
-/* Custom Effects */
-.glass-panel {
-  background: rgba(15, 15, 15, 0.7);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid var(--border);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
-}
-
-.mesh-gradient {
-  background-color: var(--background);
-  background-image:
-    radial-gradient(at 0% 0%, rgba(6, 182, 212, 0.15) 0, transparent 50%),
-    radial-gradient(at 100% 100%, rgba(236, 72, 153, 0.15) 0, transparent 50%);
-}
-
-.noise-bg {
-  position: relative;
-}
-
-.noise-bg::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-image: url("https://grainy-gradients.vercel.app/noise.svg");
-  opacity: 0.05;
-  pointer-events: none;
-  z-index: 1;
-}
-
-.cyber-card {
-  position: relative;
-  overflow: hidden;
-  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-.cyber-card::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, transparent, rgba(6, 182, 212, 0.1), transparent);
-  transform: translateX(-100%);
-  transition: transform 0.6s;
-}
-
-.cyber-card:hover::before {
-  transform: translateX(100%);
-}
-
-.cyber-card:hover {
-  transform: translateY(-5px);
-  border-color: rgba(6, 182, 212, 0.4);
-  box-shadow: 0 10px 30px -10px var(--glow-cyan);
-}
-
-.text-glow-cyan {
-  text-shadow: 0 0 15px var(--glow-cyan);
-}
-
-.text-glow-pink {
-  text-shadow: 0 0 15px var(--glow-pink);
-}
-
-/* Custom Scrollbar */
-::-webkit-scrollbar {
-  width: 5px;
-}
-
-::-webkit-scrollbar-track {
+body {
   background: var(--background);
+  color: var(--foreground);
+  font-family: 'Space Grotesk', sans-serif;
+  overflow-x: hidden;
+  cursor: crosshair;
 }
 
-::-webkit-scrollbar-thumb {
-  background: #222;
-  border-radius: 10px;
+/* --- BRUTALIST RETRO-FUTURISM EFFECTS --- */
+
+.cyber-grid {
+  background-image:
+    linear-gradient(rgba(0, 242, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 242, 255, 0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  mask-image: radial-gradient(circle at center, black, transparent 80%);
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: var(--primary);
+.brutalist-border {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  position: relative;
 }
 
-@keyframes float {
+.brutalist-border::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  background: linear-gradient(90deg, var(--brand-cyan), var(--brand-purple), var(--brand-pink));
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 0%, 1px 1px, 1px calc(100% - 1px), calc(100% - 1px) calc(100% - 1px), calc(100% - 1px) 1px, 1px 1px);
+}
+
+.brutalist-border:hover::after {
+  opacity: 1;
+}
+
+.glass-morphism {
+  background: rgba(15, 15, 15, 0.4);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Text Chromatic Aberration */
+.text-glitch {
+  position: relative;
+}
+
+.text-glitch:hover::before {
+  content: attr(data-text);
+  position: absolute;
+  left: -2px;
+  text-shadow: 2px 0 var(--brand-pink);
+  background: var(--background);
+  overflow: hidden;
+  clip: rect(0, 900px, 0, 0);
+  animation: noise-anim 2s infinite linear alternate-reverse;
+}
+
+@keyframes noise-anim {
   0% {
-    transform: translateY(0px);
+    clip: rect(40px, 9999px, 80px, 0);
   }
 
-  50% {
-    transform: translateY(-10px);
+  20% {
+    clip: rect(10px, 9999px, 30px, 0);
+  }
+
+  40% {
+    clip: rect(70px, 9999px, 90px, 0);
+  }
+
+  60% {
+    clip: rect(20px, 9999px, 50px, 0);
+  }
+
+  80% {
+    clip: rect(50px, 9999px, 70px, 0);
   }
 
   100% {
-    transform: translateY(0px);
+    clip: rect(10px, 9999px, 40px, 0);
   }
 }
 
-.floating {
-  animation: float 6s ease-in-out infinite;
+.hero-glow {
+  filter: drop-shadow(0 0 15px rgba(0, 242, 255, 0.3));
+}
+
+.scanline {
+  width: 100%;
+  height: 100px;
+  z-index: 10;
+  background: linear-gradient(0deg, rgba(0, 0, 0, 0) 0%, rgba(0, 242, 255, 0.02) 50%, rgba(0, 0, 0, 0) 100%);
+  opacity: 0.1;
+  position: absolute;
+  bottom: 100%;
+  animation: scanlineAnim 10s linear infinite;
+}
+
+@keyframes scanlineAnim {
+  0% {
+    bottom: 100%;
+  }
+
+  100% {
+    bottom: -100px;
+  }
+}
+
+/* Custom Scrollbar for the Agency */
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: #050505;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(var(--brand-cyan), var(--brand-purple));
+  border-radius: 2px;
 }
