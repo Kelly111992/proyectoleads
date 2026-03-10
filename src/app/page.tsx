@@ -25,14 +25,46 @@ import {
   Clock,
   CheckCircle2,
   AlertCircle,
-  Globe
+  Globe,
+  Loader2
 } from "lucide-react";
 import { useState, useEffect } from "react";
+import { evolutionApi } from "@/lib/evolution";
 
 export default function Home() {
   const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState("intelligence");
   const [filterStatus, setFilterStatus] = useState("All");
+  const [isSending, setIsSending] = useState<string | null>(null);
+
+  const [logs, setLogs] = useState([
+    { time: "12:45", user: "SYS_BOT", action: "Lead Enriquecido", lead: "Santiago D." },
+    { time: "12:42", user: "ARKEL", action: "Mensaje WhatsApp", lead: "Victoria V." },
+    { time: "12:30", user: "SYS_BOT", action: "WebHook Captura", lead: "Omega HQ" },
+    { time: "11:58", user: "SYSTEM", action: "Database Backup", lead: "GLOBAL" }
+  ]);
+
+  const handleWhatsAppQuickSend = async (phone: string, name: string) => {
+    setIsSending(name);
+    try {
+      const message = `¡Hola ${name}! 🚀 Soy parte del equipo de CLAVE.AI. Hemos recibido tu interés y estamos listos para llevar tu gestión de leads al siguiente nivel. ¿Te gustaría agendar una breve llamada hoy?`;
+      await evolutionApi.sendMessage(phone.replace(/\s+/g, ''), message);
+
+      const newLog = {
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        user: "ARKEL",
+        action: "WhatsApp_Elite_Sent",
+        lead: name.split(' ')[0]
+      };
+      setLogs(prev => [newLog, ...prev.slice(0, 3)]);
+      alert(`Mensaje enviado con éxito a ${name}`);
+    } catch (error) {
+      console.error(error);
+      alert("Error al enviar el mensaje. Verifica la configuración de Evolution API.");
+    } finally {
+      setIsSending(null);
+    }
+  };
 
   const agents = [
     { id: 'arkel', name: 'ARKEL', status: 'Online', color: 'bg-green-500' },
@@ -158,10 +190,50 @@ export default function Home() {
               </div>
 
               <div className="space-y-1">
-                <LeadRow name="Santiago Del Río" email="s.delrio@nexus.corp" phone="+52 33 4415 1396" source="Instagram_Elite" score={98} type="SQL" status="Nuevo" />
-                <LeadRow name="Victoria Valenzuela" email="v.val@lux.mx" phone="+52 33 1256 9876" source="GoogleSearch_Pro" score={84} type="MQL" status="Analizando" />
-                <LeadRow name="Inversiones Omega" email="hq@omega.global" phone="+52 55 9876 5432" source="WhatsApp_Direct" score={92} type="Qualified" status="Prioridad" />
-                <LeadRow name="Marcos Galperin" email="m.galp@mkt.net" phone="+52 33 6677 8899" source="LinkedIn_Outreach" score={71} type="MQL" status="Recuperado" />
+                <LeadRow
+                  name="Santiago Del Río"
+                  email="s.delrio@nexus.corp"
+                  phone="+52 33 4415 1396"
+                  source="Instagram_Elite"
+                  score={98}
+                  type="SQL"
+                  status="Nuevo"
+                  onAction={() => handleWhatsAppQuickSend("+52 33 4415 1396", "Santiago Del Río")}
+                  loading={isSending === "Santiago Del Río"}
+                />
+                <LeadRow
+                  name="Victoria Valenzuela"
+                  email="v.val@lux.mx"
+                  phone="+52 33 1256 9876"
+                  source="GoogleSearch_Pro"
+                  score={84}
+                  type="MQL"
+                  status="Analizando"
+                  onAction={() => handleWhatsAppQuickSend("+52 33 1256 9876", "Victoria Valenzuela")}
+                  loading={isSending === "Victoria Valenzuela"}
+                />
+                <LeadRow
+                  name="Inversiones Omega"
+                  email="hq@omega.global"
+                  phone="+52 55 9876 5432"
+                  source="WhatsApp_Direct"
+                  score={92}
+                  type="Qualified"
+                  status="Prioridad"
+                  onAction={() => handleWhatsAppQuickSend("+52 55 9876 5432", "Inversiones Omega")}
+                  loading={isSending === "Inversiones Omega"}
+                />
+                <LeadRow
+                  name="Marcos Galperin"
+                  email="m.galp@mkt.net"
+                  phone="+52 33 6677 8899"
+                  source="LinkedIn_Outreach"
+                  score={71}
+                  type="MQL"
+                  status="Recuperado"
+                  onAction={() => handleWhatsAppQuickSend("+52 33 6677 8899", "Marcos Galperin")}
+                  loading={isSending === "Marcos Galperin"}
+                />
               </div>
             </div>
 
@@ -241,7 +313,7 @@ function MetricBlock({ label, value, sub, icon }: any) {
   );
 }
 
-function LeadRow({ name, email, phone, source, score, type, status }: any) {
+function LeadRow({ name, email, phone, source, score, type, status, onAction, loading }: any) {
   const isHighInten = score >= 90;
   return (
     <motion.div
@@ -279,8 +351,12 @@ function LeadRow({ name, email, phone, source, score, type, status }: any) {
           <p className="text-[9px] font-black text-white/30 uppercase mb-1">{status}</p>
           <span className="text-[9px] text-brand-pink font-bold">ACCION</span>
         </div>
-        <button className="p-3 bg-white/5 hover:bg-white text-white hover:text-black transition-all">
-          <ChevronRight size={18} />
+        <button
+          onClick={onAction}
+          disabled={loading}
+          className="p-3 bg-white/5 hover:bg-white text-white hover:text-black transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {loading ? <Loader2 size={18} className="animate-spin" /> : <ChevronRight size={18} />}
         </button>
       </div>
     </motion.div>
