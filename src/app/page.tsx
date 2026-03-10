@@ -24,7 +24,8 @@ import {
   Phone,
   Clock,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Globe
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -32,6 +33,12 @@ export default function Home() {
   const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState("intelligence");
   const [filterStatus, setFilterStatus] = useState("All");
+
+  const agents = [
+    { id: 'arkel', name: 'ARKEL', status: 'Online', color: 'bg-green-500' },
+    { id: 'claudia', name: 'CLAVE_AI', status: 'Processing', color: 'bg-brand-cyan' },
+    { id: 'bot_01', name: 'ELITE_BOT', status: 'Idle', color: 'bg-white/20' }
+  ];
 
   useEffect(() => {
     setMounted(true);
@@ -41,12 +48,10 @@ export default function Home() {
 
   return (
     <div className="flex min-h-screen bg-black text-white selection:bg-brand-cyan/30 overflow-hidden relative">
-      {/* CAPA DE FONDO: GRID DINÁMICO */}
       <div className="absolute inset-0 cyber-grid z-0 opacity-40 hover:opacity-100 transition-opacity duration-1000" />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(112,0,255,0.1),transparent_50%)] z-0" />
       <div className="scanline" />
 
-      {/* --- SIDE NAVIGATION: MINIMAL BRUTALIST --- */}
       <aside className="w-16 h-screen border-r border-white/5 flex flex-col items-center py-8 z-50 bg-black/40 backdrop-blur-xl">
         <div className="mb-12">
           <motion.div
@@ -61,7 +66,8 @@ export default function Home() {
         <nav className="flex-1 space-y-8">
           <NavIcon icon={<LayoutDashboard size={20} />} active={activeTab === "intelligence"} onClick={() => setActiveTab("intelligence")} tooltip="Intelligence" />
           <NavIcon icon={<Users size={20} />} active={activeTab === "leads"} onClick={() => setActiveTab("leads")} tooltip="Lead Manager" />
-          <NavIcon icon={<MessageCircle size={20} />} active={activeTab === "chat"} onClick={() => setActiveTab("chat")} tooltip="Conversations" />
+          <NavIcon icon={<MessageCircle size={20} />} active={activeTab === "chat"} onClick={() => setActiveTab("chat")} tooltip="Omni-Inbox" />
+          <NavIcon icon={<Target size={20} />} active={activeTab === "automation"} onClick={() => setActiveTab("automation")} tooltip="Workflows" />
           <NavIcon icon={<Database size={20} />} active={activeTab === "infra"} onClick={() => setActiveTab("infra")} tooltip="Infra Health" />
         </nav>
 
@@ -72,9 +78,7 @@ export default function Home() {
         </div>
       </aside>
 
-      {/* --- MAIN INTERFACE --- */}
       <main className="flex-1 overflow-y-auto z-10 relative custom-scrollbar">
-        {/* TOP BAR: ECHELON INTERFACE */}
         <header className="sticky top-0 p-8 flex justify-between items-center backdrop-blur-md bg-black/20 z-40 border-b border-white/5">
           <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
             <div className="flex items-center gap-4">
@@ -110,7 +114,6 @@ export default function Home() {
         </header>
 
         <div className="p-8 lg:p-12 space-y-20">
-          {/* HERO STRUCK: MASTER KPIS */}
           <section>
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
@@ -133,9 +136,7 @@ export default function Home() {
             </div>
           </section>
 
-          {/* CORE SYSTEM: LEAD LIFECYCLE MANAGEMENT */}
           <section className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-            {/* 1. LEAD QUEUE: THE PIPELINE */}
             <div className="lg:col-span-8 space-y-8">
               <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div>
@@ -157,77 +158,40 @@ export default function Home() {
               </div>
 
               <div className="space-y-1">
-                <LeadRow
-                  name="Santiago Del Río"
-                  email="s.delrio@nexus.corp"
-                  phone="+52 33 4415 1396"
-                  source="Instagram_Elite"
-                  score={98}
-                  type="SQL"
-                  status="Nuevo"
-                />
-                <LeadRow
-                  name="Victoria Valenzuela"
-                  email="v.val@lux.mx"
-                  phone="+52 33 1256 9876"
-                  source="GoogleSearch_Pro"
-                  score={84}
-                  type="MQL"
-                  status="Analizando"
-                />
-                <LeadRow
-                  name="Inversiones Omega"
-                  email="hq@omega.global"
-                  phone="+52 55 9876 5432"
-                  source="WhatsApp_Direct"
-                  score={92}
-                  type="Qualified"
-                  status="Prioridad"
-                />
-                <LeadRow
-                  name="Marcos Galperin"
-                  email="m.galp@mkt.net"
-                  phone="+52 33 6677 8899"
-                  source="LinkedIn_Outreach"
-                  score={71}
-                  type="MQL"
-                  status="Recuperado"
-                />
+                <LeadRow name="Santiago Del Río" email="s.delrio@nexus.corp" phone="+52 33 4415 1396" source="Instagram_Elite" score={98} type="SQL" status="Nuevo" />
+                <LeadRow name="Victoria Valenzuela" email="v.val@lux.mx" phone="+52 33 1256 9876" source="GoogleSearch_Pro" score={84} type="MQL" status="Analizando" />
+                <LeadRow name="Inversiones Omega" email="hq@omega.global" phone="+52 55 9876 5432" source="WhatsApp_Direct" score={92} type="Qualified" status="Prioridad" />
+                <LeadRow name="Marcos Galperin" email="m.galp@mkt.net" phone="+52 33 6677 8899" source="LinkedIn_Outreach" score={71} type="MQL" status="Recuperado" />
               </div>
             </div>
 
-            {/* 2. INTELLIGENCE COLUMN: LOGIC & CONTROL */}
             <div className="lg:col-span-4 space-y-10">
-              {/* AI ENRICHMENT WIDGET */}
-              <div className="p-8 border border-brand-pink/20 bg-brand-pink/[0.02] relative group overflow-hidden">
-                <div className="absolute top-0 left-0 w-1 h-full bg-brand-pink group-hover:w-full transition-all duration-700 opacity-10 pointer-events-none" />
-                <div className="flex items-center gap-3 mb-8">
-                  <Sparkles className="text-brand-pink animate-pulse" size={18} />
-                  <h4 className="text-[11px] font-black uppercase tracking-[0.3em]">Cerebro_Inference</h4>
-                </div>
-
-                <div className="space-y-6">
-                  <div className="border border-white/5 p-4 bg-black/40">
-                    <p className="font-mono text-[10px] text-white/50 leading-relaxed uppercase tracking-tighter">
-                      Detectada anomalía de intención en el Nodo 5. Inversiones Omega ha visitado el catálogo de "Diamante" 14 veces hoy.
-                    </p>
-                    <div className="mt-4 pt-4 border-t border-white/5 flex items-center justify-between">
-                      <span className="text-[10px] font-black text-brand-pink">SCR: 92%</span>
-                      <span className="text-[10px] font-black text-green-500 flex items-center gap-1">
-                        <CheckCircle2 size={10} /> LISTO_PARA_CIERRE
-                      </span>
-                    </div>
-                  </div>
-
-                  <button className="w-full py-4 bg-white text-black text-[10px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-2 hover:bg-brand-pink hover:text-white transition-all">
-                    Vincular con WhatsApp Pro
-                    <ChevronRight size={14} />
-                  </button>
+              <div className="p-8 border border-white/10 bg-white/[0.02]">
+                <h4 className="text-[11px] font-black uppercase tracking-[0.3em] mb-6 text-white/40">Connected_Channels</h4>
+                <div className="grid grid-cols-2 gap-2">
+                  <ChannelBadge icon={<MessageCircle size={10} />} name="WhatsApp" status="Active" color="text-green-500" />
+                  <ChannelBadge icon={<Globe size={10} />} name="Messenger" status="Sync" color="text-brand-cyan" />
+                  <ChannelBadge icon={<Mail size={10} />} name="Email_HQ" status="Active" color="text-green-500" />
+                  <ChannelBadge icon={<Phone size={10} />} name="VoIP_Net" status="Offline" color="text-white/20" />
                 </div>
               </div>
 
-              {/* RECENT ACTIVITY LOG */}
-              <div className="p-8 border border-white/5 bg-white/[0.01]">
+              <div className="p-8 border border-white/10 bg-white/[0.01]">
+                <h4 className="text-[11px] font-black uppercase tracking-[0.3em] mb-6 text-white/40">Active_Team</h4>
+                <div className="space-y-4">
+                  {agents.map(agent => (
+                    <div key={agent.id} className="flex items-center justify-between group">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-2 h-2 rounded-full ${agent.color}`} />
+                        <span className="text-[10px] font-black uppercase tracking-widest">{agent.name}</span>
+                      </div>
+                      <span className="text-[8px] font-mono opacity-30 group-hover:opacity-100 transition-opacity uppercase">{agent.status}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="p-8 border border-white/5 bg-black">
                 <h4 className="text-[11px] font-black uppercase tracking-[0.3em] mb-8 text-white/40">Sincronización_Live</h4>
                 <div className="space-y-6">
                   <LogItem time="12:45" user="SYS_BOT" action="Lead Enriquecido" lead="Santiago D." />
@@ -241,7 +205,6 @@ export default function Home() {
         </div>
       </main>
 
-      {/* GLOBAL HUD ELEMENTS */}
       <div className="fixed bottom-8 right-8 z-50 flex flex-col items-end gap-3 pointer-events-none">
         <div className="px-4 py-2 bg-brand-cyan/20 border border-brand-cyan/30 backdrop-blur-md rounded-xs">
           <span className="text-[9px] font-black text-brand-cyan tracking-widest uppercase">Encryption: AES-256 Active</span>
@@ -297,27 +260,24 @@ function LeadRow({ name, email, phone, source, score, type, status }: any) {
           </div>
         </div>
       </div>
-
-      <div className="md:col-span-3 flex flex-col items-center md:items-start">
-        <p className="text-[9px] font-black text-white/30 uppercase tracking-[0.1em] mb-1">Fuente</p>
+      <div className="md:col-span-3">
+        <p className="text-[9px] font-black text-white/30 uppercase mb-1">Fuente</p>
         <span className="text-xs font-bold text-white/60">{source}</span>
       </div>
-
       <div className="md:col-span-3 flex items-center gap-8 px-4 border-l border-r border-white/5">
         <div className="text-center">
-          <p className="text-[9px] font-black text-white/30 uppercase tracking-[0.1em] mb-1">Score</p>
+          <p className="text-[9px] font-black text-white/30 uppercase mb-1">Score</p>
           <span className={`text-xl font-black ${isHighInten ? 'text-brand-cyan' : 'text-white/60'}`}>{score}</span>
         </div>
         <div className="text-center">
-          <p className="text-[9px] font-black text-white/30 uppercase tracking-[0.1em] mb-1">Tipo</p>
-          <span className="px-2 py-0.5 bg-white/5 border border-white/10 text-[9px] font-black text-white/60 uppercase">{type}</span>
+          <p className="text-[9px] font-black text-white/30 uppercase mb-1">Tipo</p>
+          <span className="px-2 py-0.5 bg-white/5 border border-white/10 text-[9px] font-black uppercase text-white/60">{type}</span>
         </div>
       </div>
-
-      <div className="md:col-span-2 flex items-center justify-end gap-6 font-mono">
+      <div className="md:col-span-2 flex items-center justify-end gap-6">
         <div className="text-right">
-          <p className="text-[9px] font-black text-white/30 uppercase tracking-[0.1em] mb-1">{status}</p>
-          <span className="text-[9px] text-brand-pink font-bold">ACCION_REQUERIDA</span>
+          <p className="text-[9px] font-black text-white/30 uppercase mb-1">{status}</p>
+          <span className="text-[9px] text-brand-pink font-bold">ACCION</span>
         </div>
         <button className="p-3 bg-white/5 hover:bg-white text-white hover:text-black transition-all">
           <ChevronRight size={18} />
@@ -327,9 +287,21 @@ function LeadRow({ name, email, phone, source, score, type, status }: any) {
   );
 }
 
+function ChannelBadge({ icon, name, status, color }: any) {
+  return (
+    <div className="p-3 border border-white/5 bg-white/[0.02] flex flex-col gap-2">
+      <div className="flex items-center gap-2 text-white/20">
+        {icon}
+        <span className="text-[8px] font-black uppercase tracking-widest">{name}</span>
+      </div>
+      <span className={`text-[9px] font-black uppercase ${color}`}>{status}</span>
+    </div>
+  );
+}
+
 function LogItem({ time, user, action, lead }: any) {
   return (
-    <div className="flex items-center justify-between text-[10px] font-mono group">
+    <div className="flex items-center justify-between text-[10px] font-mono group py-1">
       <div className="flex items-center gap-4">
         <span className="text-white/20">{time}</span>
         <span className="text-brand-cyan font-black">[{user}]</span>
