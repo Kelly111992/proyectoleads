@@ -30,25 +30,67 @@ import {
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { evolutionApi } from "@/lib/evolution";
+import { supabase } from "@/lib/supabase";
 
 export default function Home() {
   const [mounted, setMounted] = useState(false);
-  const [activeTab, setActiveTab] = useState("intelligence");
+  const [activeTab, setActiveTab] = useState("leads");
   const [filterStatus, setFilterStatus] = useState("All");
   const [isSending, setIsSending] = useState<string | null>(null);
+  const [leads, setLeads] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    total: 0,
+    conversion: "0%",
+    projected: "$0"
+  });
 
   const [logs, setLogs] = useState([
-    { time: "12:45", user: "SYS_BOT", action: "Lead Enriquecido", lead: "Santiago D." },
-    { time: "12:42", user: "ARKEL", action: "Mensaje WhatsApp", lead: "Victoria V." },
-    { time: "12:30", user: "SYS_BOT", action: "WebHook Captura", lead: "Omega HQ" },
-    { time: "11:58", user: "SYSTEM", action: "Database Backup", lead: "GLOBAL" }
+    { time: "00:00", user: "SYS", action: "Iniciando Sistema", lead: "CLAVE_AI" }
   ]);
 
-  const handleWhatsAppQuickSend = async (phone: string, name: string) => {
+  const fetchLeads = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('elite_leads_view')
+        .select('*');
+
+      if (error) throw error;
+      if (data) {
+        setLeads(data);
+        calculateStats(data);
+      }
+    } catch (error) {
+      console.error("Error fetching leads:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const calculateStats = (data: any[]) => {
+    const total = data.length;
+    const qualified = data.filter(l => l.type === 'Qualified' || l.type === 'SQL').length;
+    const conversion = total > 0 ? ((qualified / total) * 100).toFixed(1) + "%" : "0%";
+    const projected = (qualified * 1500).toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+
+    setStats({
+      total,
+      conversion,
+      projected
+    });
+  };
+
+  const handleWhatsAppQuickSend = async (phone: string, name: string, id: number) => {
     setIsSending(name);
     try {
       const message = `¡Hola ${name}! 🚀 Soy parte del equipo de CLAVE.AI. Hemos recibido tu interés y estamos listos para llevar tu gestión de leads al siguiente nivel. ¿Te gustaría agendar una breve llamada hoy?`;
-      await evolutionApi.sendMessage(phone.replace(/\s+/g, ''), message);
+      await evolutionApi.sendMessage(phone, message);
+
+      // Actualizar estado en Supabase
+      await supabase
+        .from('leads')
+        .update({ whatsapp_sent: true, action_status: 'Contactado' })
+        .eq('id', id);
 
       const newLog = {
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -58,6 +100,7 @@ export default function Home() {
       };
       setLogs(prev => [newLog, ...prev.slice(0, 3)]);
       alert(`Mensaje enviado con éxito a ${name}`);
+      fetchLeads(); // Refrescar para ver cambios
     } catch (error) {
       console.error(error);
       alert("Error al enviar el mensaje. Verifica la configuración de Evolution API.");
@@ -74,6 +117,39 @@ export default function Home() {
 
   useEffect(() => {
     setMounted(true);
+    fetchLeads();
+
+    // Realtime subscription
+    const channel = supabase
+      .channel('schema-db-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'leads',
+        },
+        (payload) => {
+          console.log('Change received!', payload);
+          fetchLeads();
+
+          if (payload.eventType === 'INSERT') {
+            const newLead = payload.new;
+            const newLog = {
+              time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              user: "SYS_BOT",
+              action: "Nuevo Lead Detectado",
+              lead: newLead.from_name || "Anónimo"
+            };
+            setLogs(prev => [newLog, ...prev.slice(0, 3)]);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   if (!mounted) return null;
@@ -136,6 +212,20 @@ export default function Home() {
               <motion.button
                 whileHover={{ scale: 1.05, boxShadow: "0 0 20px rgba(0, 242, 255, 0.4)" }}
                 whileTap={{ scale: 0.95 }}
+                onClick={async () => {
+                  const demoNames = ["Elon Tusk", "Jeff Bozo", "Bill Gates", "Mark Zucker", "Satya Nadela"];
+                  const name = demoNames[Math.floor(Math.random() * demoNames.length)];
+                  const { error } = await supabase.from('leads').insert([{
+                    from_name: name,
+                    from_address: name.toLowerCase().replace(' ', '.') + '@test.ai',
+                    phone: '5213318213624', // Test number
+                    source: 'Dashboard_Manual',
+                    score: Math.floor(Math.random() * 40) + 60,
+                    stage: 'MQL',
+                    action_status: 'Nuevo'
+                  }]);
+                  if (error) alert("Error capturando: " + error.message);
+                }}
                 className="bg-brand-cyan text-black px-6 py-2.5 text-[10px] font-black uppercase tracking-[0.2em] hover:brightness-110 transition-all flex items-center gap-2"
               >
                 <Plus size={14} />
@@ -162,9 +252,9 @@ export default function Home() {
             </motion.div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-1 px-1 bg-white/5 border border-white/10">
-              <MetricBlock label="Total Capturados" value="12,842" sub="+14% MoM" icon={<Users className="text-brand-cyan" />} />
-              <MetricBlock label="Tasa de Cierre" value="84.2%" sub="Alpha Target" icon={<Target className="text-brand-pink" />} />
-              <MetricBlock label="Ingreso Proyectado" value="$1.2M" sub="Verified" icon={<TrendingUp className="text-brand-purple" />} />
+              <MetricBlock label="Total Capturados" value={stats.total.toLocaleString()} sub="+14% MoM" icon={<Users className="text-brand-cyan" />} />
+              <MetricBlock label="Tasa de Cierre" value={stats.conversion} sub="Alpha Target" icon={<Target className="text-brand-pink" />} />
+              <MetricBlock label="Ingreso Proyectado" value={stats.projected} sub="Verified" icon={<TrendingUp className="text-brand-purple" />} />
             </div>
           </section>
 
@@ -190,50 +280,33 @@ export default function Home() {
               </div>
 
               <div className="space-y-1">
-                <LeadRow
-                  name="Santiago Del Río"
-                  email="s.delrio@nexus.corp"
-                  phone="+52 33 4415 1396"
-                  source="Instagram_Elite"
-                  score={98}
-                  type="SQL"
-                  status="Nuevo"
-                  onAction={() => handleWhatsAppQuickSend("+52 33 4415 1396", "Santiago Del Río")}
-                  loading={isSending === "Santiago Del Río"}
-                />
-                <LeadRow
-                  name="Victoria Valenzuela"
-                  email="v.val@lux.mx"
-                  phone="+52 33 1256 9876"
-                  source="GoogleSearch_Pro"
-                  score={84}
-                  type="MQL"
-                  status="Analizando"
-                  onAction={() => handleWhatsAppQuickSend("+52 33 1256 9876", "Victoria Valenzuela")}
-                  loading={isSending === "Victoria Valenzuela"}
-                />
-                <LeadRow
-                  name="Inversiones Omega"
-                  email="hq@omega.global"
-                  phone="+52 55 9876 5432"
-                  source="WhatsApp_Direct"
-                  score={92}
-                  type="Qualified"
-                  status="Prioridad"
-                  onAction={() => handleWhatsAppQuickSend("+52 55 9876 5432", "Inversiones Omega")}
-                  loading={isSending === "Inversiones Omega"}
-                />
-                <LeadRow
-                  name="Marcos Galperin"
-                  email="m.galp@mkt.net"
-                  phone="+52 33 6677 8899"
-                  source="LinkedIn_Outreach"
-                  score={71}
-                  type="MQL"
-                  status="Recuperado"
-                  onAction={() => handleWhatsAppQuickSend("+52 33 6677 8899", "Marcos Galperin")}
-                  loading={isSending === "Marcos Galperin"}
-                />
+                {loading ? (
+                  <div className="p-20 flex flex-col items-center justify-center border border-white/5 bg-white/[0.01]">
+                    <Loader2 size={40} className="text-brand-cyan animate-spin mb-4" />
+                    <span className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 text-glow-cyan">Sincronizando Base de Datos_</span>
+                  </div>
+                ) : leads.length === 0 ? (
+                  <div className="p-20 text-center border border-white/5 bg-white/[0.01]">
+                    <p className="text-xs text-white/40 uppercase tracking-widest">No se encontraron leads en el sistema.</p>
+                  </div>
+                ) : (
+                  leads
+                    .filter(l => filterStatus === "All" || l.type === filterStatus)
+                    .map((lead) => (
+                      <LeadRow
+                        key={lead.id}
+                        name={lead.name || "Sin nombre"}
+                        email={lead.email || "Sin email"}
+                        phone={lead.phone || "Sin teléfono"}
+                        source={lead.source}
+                        score={lead.score || 0}
+                        type={lead.type}
+                        status={lead.status}
+                        onAction={() => handleWhatsAppQuickSend(lead.phone, lead.name, lead.id)}
+                        loading={isSending === lead.name}
+                      />
+                    ))
+                )}
               </div>
             </div>
 
@@ -266,10 +339,9 @@ export default function Home() {
               <div className="p-8 border border-white/5 bg-black">
                 <h4 className="text-[11px] font-black uppercase tracking-[0.3em] mb-8 text-white/40">Sincronización_Live</h4>
                 <div className="space-y-6">
-                  <LogItem time="12:45" user="SYS_BOT" action="Lead Enriquecido" lead="Santiago D." />
-                  <LogItem time="12:42" user="ARKEL" action="Mensaje WhatsApp" lead="Victoria V." />
-                  <LogItem time="12:30" user="SYS_BOT" action="WebHook Captura" lead="Omega HQ" />
-                  <LogItem time="11:58" user="SYSTEM" action="Database Backup" lead="GLOBAL" />
+                  {logs.map((log, i) => (
+                    <LogItem key={i} {...log} />
+                  ))}
                 </div>
               </div>
             </div>
