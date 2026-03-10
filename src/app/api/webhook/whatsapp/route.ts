@@ -1,22 +1,21 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { evolutionApi } from '@/lib/evolution';
+import { aiService } from '@/lib/ai';
 
 export async function POST(req: Request) {
     try {
         const body = await req.json();
-        console.log('--- WEBHOOK EVOLUTION RECEIVED ---');
+        console.log('--- WEBHOOK EVOLUTION RECEIVED (AI BRAIN ACTIVE) ---');
 
         const event = body.event;
         const data = body.data;
 
-        // Solo procesamos mensajes recibidos (upsert)
         if (event === 'messages.upsert') {
             const message = data.message;
             const key = message.key;
             const fromMe = key.fromMe;
 
-            // Si el mensaje no es mío (es del lead)
             if (!fromMe) {
                 const phone = key.remoteJid.split('@')[0];
                 const pushName = data.pushName || 'Desconocido';
@@ -24,44 +23,41 @@ export async function POST(req: Request) {
 
                 console.log(`Mensaje de: ${pushName} (${phone}): ${content}`);
 
-                // 1. Buscar si el lead ya existe en Supabase
-                const { data: existingLead, error: findError } = await supabase
+                // 1. Generar respuesta inteligente con Groq Llama 3.3
+                const aiResponse = await aiService.generateResponse(pushName, content);
+
+                // 2. Buscar si el lead ya existe en Supabase
+                const { data: existingLead } = await supabase
                     .from('leads')
                     .select('*')
                     .eq('phone', phone)
                     .single();
 
                 if (!existingLead) {
-                    // 2. Si no existe, crearlo
-                    console.log('Creando nuevo lead desde WhatsApp...');
-                    const { error: insertError } = await supabase
+                    console.log('Creando nuevo lead con cerebro de IA...');
+                    await supabase
                         .from('leads')
                         .insert([{
                             from_name: pushName,
                             phone: phone,
                             source: 'WhatsApp_Live',
                             body_preview: content,
-                            score: 70, // Score base por interés inicial
+                            score: 85,
                             stage: 'MQL',
-                            action_status: 'Nuevo'
+                            action_status: 'IA_Respondiendo'
                         }]);
-
-                    if (insertError) console.error('Error insertando lead:', insertError);
-
-                    // 3. Respuesta automática de bienvenida (Opcional pero recomendado para UX Elite)
-                    const welcomeMsg = `¡Hola ${pushName}! 🤖 Soy el asistente inteligente de CLAVE.AI. He recibido su mensaje: "${content.substring(0, 20)}...". Un asesor se pondrá en contacto pronto.`;
-                    await evolutionApi.sendMessage(phone, welcomeMsg);
                 } else {
-                    // 4. Si ya existe, actualizar el preview del mensaje
-                    console.log('Actualizando lead existente...');
                     await supabase
                         .from('leads')
                         .update({
                             body_preview: content,
-                            action_status: 'Mensaje Recibido'
+                            action_status: 'Conversación_IA'
                         })
                         .eq('phone', phone);
                 }
+
+                // 3. Enviar la respuesta generada por la IA
+                await evolutionApi.sendMessage(phone, aiResponse);
             }
         }
 
