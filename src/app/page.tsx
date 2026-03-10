@@ -51,15 +51,14 @@ export default function Home() {
 
   const fetchLeads = async () => {
     try {
+      setLoading(true);
       const { data, error } = await supabase
         .from('elite_leads_view')
         .select('*');
 
       if (error) throw error;
-      if (data) {
-        setLeads(data);
-        calculateStats(data);
-      }
+      setLeads(data || []);
+      calculateStats(data || []);
     } catch (error) {
       console.error("Error fetching leads:", error);
     } finally {
