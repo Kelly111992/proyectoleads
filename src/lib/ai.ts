@@ -1,12 +1,14 @@
 import Groq from "groq-sdk";
 
-const groq = new Groq({
-    apiKey: process.env.GROQ_API_KEY,
-});
-
 export const aiService = {
     async generateResponse(customerName: string, message: string) {
         try {
+            // Inicialización Lazy: Esto asegura que Groq SOLO se instancie
+            // cuando se llama a esta función (que ocurre dentro del webhook/servidor)
+            const groq = new Groq({
+                apiKey: process.env.GROQ_API_KEY || "",
+            });
+
             const completion = await groq.chat.completions.create({
                 messages: [
                     {
