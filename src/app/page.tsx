@@ -6,7 +6,7 @@ import {
   Search, LayoutDashboard, Clock, Activity, AlertCircle, Phone, Mail,
   Calendar, Inbox, Command, Sparkles, Send, MoreVertical, X, CheckCircle2,
   FileText, ArrowRight, BrainCircuit, BarChart2, ShieldCheck, HelpCircle,
-  Play, Bot, PlayCircle
+  Play, Bot, PlayCircle, Filter
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { evolutionApi } from "@/lib/evolution";
