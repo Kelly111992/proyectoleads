@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
 const STAGES = ["Nuevo", "Contactado", "Cotizando", "Negociación", "Cierre"];
 
@@ -78,19 +79,26 @@ export default function Home() {
     setChatMsgs([]);
   };
 
-  const deliverSimMsg = () => {
+  const deliverSimMsg = async () => {
     if (!simInput) return;
     const newMsgs = [...chatMsgs, { role: 'user', text: simInput } as const];
     setChatMsgs(newMsgs);
     setSimInput("");
     setChatAiThinking(true);
 
-    // Simulate AI response based on context
-    setTimeout(() => {
+    try {
+      const gReq = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: newMsgs.map(m => ({ role: m.role, content: m.text })), leadName: simName }),
+      });
+      const gRes = await gReq.json();
       setChatAiThinking(false);
-      const aiResponseText = `¡Hola ${simName.split(' ')[0]}! 😊 Claro, soy el Asistente Comercial de ALTEPSA. Registramos tu interés. Contamos con pollo calidad suprema, corte y canal. ¿Te gustaría cotizar una cantidad específica para entrega?`;
-      setChatMsgs([...newMsgs, { role: 'ai', text: aiResponseText }]);
-    }, 2000);
+      setChatMsgs([...newMsgs, { role: 'ai', text: gRes.text || 'Error generando respuesta.' }]);
+    } catch (e) {
+      setChatAiThinking(false);
+      setChatMsgs([...newMsgs, { role: 'ai', text: 'Error de red.' }]);
+    }
   };
 
   useEffect(() => {
@@ -145,7 +153,7 @@ export default function Home() {
             <circle cx="50" cy="50" r="42" fill="none" stroke="#FFCC00" strokeWidth="1" strokeDasharray="20 10" opacity="0.4" className="animate-[spin_6s_linear_infinite_reverse]" style={{ transformOrigin: 'center' }} />
           </svg>
           <div className="absolute inset-3 bg-zinc-950 rounded-full flex items-center justify-center overflow-hidden border border-zinc-800">
-            <img src="/logo_nuevo_1.png" alt="ALTEPSA" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none' }} />
+            <img src="/altepsa_logo_5.png" alt="ALTEPSA" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none' }} />
           </div>
         </div>
 
@@ -257,7 +265,7 @@ export default function Home() {
                 <circle cx="50" cy="50" r="48" fill="none" stroke="#FFCC00" strokeWidth="2" strokeDasharray="10 8" opacity="0.6" />
               </svg>
               <div className="absolute inset-1 rounded-full overflow-hidden bg-black flex items-center justify-center border border-zinc-800">
-                <img src="/logo_nuevo_1.png" alt="ALTEPSA" className="w-full h-full object-cover p-1" onError={(e) => { e.currentTarget.style.display = 'none' }} />
+                <img src="/altepsa_logo_5.png" alt="ALTEPSA" className="w-full h-full object-cover p-1" onError={(e) => { e.currentTarget.style.display = 'none' }} />
               </div>
             </div>
             <div>
@@ -696,21 +704,32 @@ export default function Home() {
   }
 
   function AnalyticsView() {
+    const dataChart = [
+      { name: 'Lun', prospectos: 25, conversiones: 12 },
+      { name: 'Mar', prospectos: 35, conversiones: 18 },
+      { name: 'Mie', prospectos: 20, conversiones: 15 },
+      { name: 'Jue', prospectos: 45, conversiones: 30 },
+      { name: 'Vie', prospectos: 55, conversiones: 35 },
+      { name: 'Sab', prospectos: 30, conversiones: 20 },
+      { name: 'Dom', prospectos: 15, conversiones: 8 },
+    ];
+
     return (
       <div className="flex-1 overflow-y-auto p-8 space-y-8 bg-zinc-950 h-full">
         <h2 className="text-2xl font-black uppercase tracking-wider text-white flex items-center gap-3">
-          <BarChart2 className="text-[#E30613]" /> Panel Estratégico
+          <BarChart2 className="text-[#E30613]" /> Inteligencia Comercial
         </h2>
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-black border border-zinc-800 p-6 rounded-2xl relative overflow-hidden group">
             <div className="absolute top-0 right-0 p-4 opacity-10 scale-150 rotate-12 group-hover:rotate-0 transition-transform text-[#FFCC00]"><TrendingUp size={64} /></div>
-            <p className="text-xs font-black uppercase tracking-widest text-zinc-500 mb-1">Volumen Desplazado</p>
-            <p className="text-4xl font-black text-white">12.5 <span className="text-lg text-zinc-500">Ton</span></p>
+            <p className="text-xs font-black uppercase tracking-widest text-zinc-500 mb-1">Pollo Desplazado MTD</p>
+            <p className="text-4xl font-black text-white">45.2 <span className="text-lg text-zinc-500">Ton</span></p>
           </div>
           <div className="bg-black border border-zinc-800 p-6 rounded-2xl relative overflow-hidden group">
             <div className="absolute top-0 right-0 p-4 opacity-10 scale-150 rotate-12 group-hover:rotate-0 transition-transform text-[#E30613]"><Target size={64} /></div>
-            <p className="text-xs font-black uppercase tracking-widest text-zinc-500 mb-1">Tasa Cierre IA</p>
-            <p className="text-4xl font-black text-white">48% <span className="text-lg text-emerald-500">↑ 12%</span></p>
+            <p className="text-xs font-black uppercase tracking-widest text-zinc-500 mb-1">Tasa Cierre Global</p>
+            <p className="text-4xl font-black text-white">58% <span className="text-lg text-emerald-500">↑ 14%</span></p>
           </div>
           <div className="bg-black border border-zinc-800 p-6 rounded-2xl relative flex flex-col justify-end min-h-[140px] overflow-hidden">
             <div className="absolute inset-0 opacity-40 mix-blend-luminosity">
@@ -721,11 +740,35 @@ export default function Home() {
             </div>
           </div>
         </div>
-        {/* Visualizer Mock */}
-        <div className="h-64 border border-zinc-800 rounded-2xl bg-zinc-900/50 flex items-end justify-between p-6 gap-2 opacity-80">
-          {[30, 45, 20, 60, 80, 50, 95, 40, 70, 85, 55, 100].map((h, i) => (
-            <motion.div key={i} initial={{ height: 0 }} animate={{ height: `${h}%` }} transition={{ delay: i * 0.05, duration: 1 }} className="w-full bg-[#E30613]/80 rounded-t-sm" />
-          ))}
+
+        {/* Dynamic Recharts Chart */}
+        <div className="h-80 border border-zinc-800 rounded-2xl bg-black p-6 relative">
+          <h3 className="text-sm font-black uppercase tracking-widest text-zinc-400 mb-6 flex items-center gap-2">
+            <Activity className="text-[#E30613] animate-pulse" size={16} /> Tendencia de Generación vs Conversión
+          </h3>
+          <ResponsiveContainer width="100%" height="85%">
+            <AreaChart data={dataChart}>
+              <defs>
+                <linearGradient id="colorProspectos" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#E30613" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#E30613" stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="colorConversiones" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#FFCC00" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#FFCC00" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
+              <XAxis dataKey="name" stroke="#52525b" axisLine={false} tickLine={false} fontSize={12} />
+              <YAxis stroke="#52525b" axisLine={false} tickLine={false} fontSize={12} />
+              <Tooltip
+                contentStyle={{ backgroundColor: '#09090b', borderColor: '#27272a', borderRadius: '8px', color: '#fff' }}
+                itemStyle={{ color: '#fff', fontSize: '12px', fontWeight: 'bold' }}
+              />
+              <Area type="monotone" dataKey="prospectos" name="Ventas/Prospectos" stroke="#E30613" strokeWidth={3} fillOpacity={1} fill="url(#colorProspectos)" />
+              <Area type="monotone" dataKey="conversiones" name="Cierres Exitosos" stroke="#FFCC00" strokeWidth={3} fillOpacity={1} fill="url(#colorConversiones)" />
+            </AreaChart>
+          </ResponsiveContainer>
         </div>
       </div>
     );
@@ -734,26 +777,53 @@ export default function Home() {
   function AgentsView() {
     return (
       <div className="flex-1 p-8 bg-zinc-950 h-full overflow-y-auto">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+        <h2 className="text-2xl font-black uppercase tracking-wider text-white flex items-center gap-3 mb-8">
+          <Users className="text-[#FFCC00]" /> Rendimiento Fuerza de Ventas
+        </h2>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {agents.map(a => (
-            <div key={a.id} className="bg-black border border-zinc-800 rounded-2xl p-6 relative overflow-hidden group">
-              <div className="absolute -bottom-10 -right-10 w-32 h-32 rounded-full border-[20px] border-zinc-900 opacity-50 group-hover:scale-150 transition-all duration-700" />
-              <div className="flex items-center gap-4 mb-6 relative z-10">
-                <div className={`w-14 h-14 rounded-xl ${a.bg} flex items-center justify-center text-xl font-black ${a.color} border ${a.border}`}>{a.avatar}</div>
-                <div>
-                  <h3 className="text-lg font-bold text-white">{a.name}</h3>
-                  <span className="text-xs text-zinc-500 font-mono flex items-center gap-1.5"><Activity size={10} className="text-[#25D366]" /> {a.lastSeen}</span>
+            <div key={a.id} className="bg-black border border-zinc-800 rounded-2xl relative overflow-hidden group flex flex-col shadow-lg">
+              <div className="absolute -bottom-10 -right-10 w-32 h-32 rounded-full border-[20px] border-zinc-900 opacity-50 group-hover:scale-150 transition-all duration-700 pointer-events-none" />
+
+              <div className="p-6 border-b border-zinc-800/80 relative z-10">
+                <div className="flex items-center gap-4">
+                  <div className={`w-14 h-14 rounded-xl ${a.bg} flex items-center justify-center text-xl font-black ${a.color} border ${a.border}`}>{a.avatar}</div>
+                  <div>
+                    <h3 className="text-xl font-black text-white">{a.name}</h3>
+                    <span className="text-xs text-zinc-500 font-mono flex items-center gap-1.5"><Activity size={10} className="text-[#25D366]" /> {a.lastSeen}</span>
+                  </div>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4 relative z-10">
-                <div className="bg-zinc-900 p-3 rounded-xl border border-zinc-800/80">
-                  <p className="text-[9px] uppercase tracking-widest text-zinc-500 mb-1">Ventas MTD</p>
-                  <p className="text-sm font-bold text-white">{a.sales}</p>
+
+              <div className="p-6 grid grid-cols-2 gap-4 relative z-10 flex-1">
+                <div className="bg-zinc-900/50 p-4 rounded-xl border border-zinc-800/80 flex flex-col justify-center">
+                  <p className="text-[9px] uppercase tracking-widest text-[#FFCC00] mb-1 font-bold">Ventas Mensuales</p>
+                  <p className="text-xl font-black text-white font-mono">{a.sales}</p>
                 </div>
-                <div className="bg-zinc-900 p-3 rounded-xl border border-zinc-800/80">
-                  <p className="text-[9px] uppercase tracking-widest text-zinc-500 mb-1">Conversión</p>
-                  <p className="text-sm font-bold text-white">{a.conversion}</p>
+                <div className="bg-zinc-900/50 p-4 rounded-xl border border-zinc-800/80 flex flex-col justify-center">
+                  <p className="text-[9px] uppercase tracking-widest text-[#E30613] mb-1 font-bold">Tasa Conversión</p>
+                  <p className="text-xl font-black text-white font-mono">{a.conversion}</p>
                 </div>
+
+                <div className="col-span-2 pt-2">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Saturación / Carga Asignada</span>
+                    <span className="text-[10px] text-white font-mono font-bold">{a.capacity}%</span>
+                  </div>
+                  <div className="w-full bg-zinc-900 rounded-full h-1.5 overflow-hidden">
+                    <motion.div
+                      className={`h-1.5 ${a.capacity > 85 ? 'bg-[#E30613]' : 'bg-[#FFCC00]'}`}
+                      initial={{ width: 0 }}
+                      animate={{ width: `${a.capacity}%` }}
+                      transition={{ duration: 1, ease: "easeOut" }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="px-6 py-4 bg-zinc-900/30 border-t border-zinc-800 flex justify-between items-center relative z-10">
+                <span className="text-xs text-zinc-500 font-medium">Leads Activos Vigentes: <strong className="text-white font-mono">{a.active}</strong></span>
+                <button className="text-[10px] font-bold text-white uppercase tracking-widest border border-zinc-700 hover:bg-zinc-800 px-3 py-1.5 rounded-lg transition-colors">Operar</button>
               </div>
             </div>
           ))}
