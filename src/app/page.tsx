@@ -178,110 +178,138 @@ export default function Home() {
   if (!mounted) return null;
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA] text-[#1A1A1A] font-sans selection:bg-[#E30613] selection:text-white relative overflow-hidden">
+    <div className="min-h-screen text-[#1A1A1A] font-sans selection:bg-[#E30613] selection:text-white relative overflow-hidden bg-white">
+      {/* Dynamic Background Layer */}
+      <div
+        className="fixed inset-0 z-0 opacity-15 grayscale-[0.5] scale-110 motion-safe:animate-[pulse_10s_infinite]"
+        style={{
+          backgroundImage: 'url("/bg-altepsa.jpg")',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          filter: 'blur(10px) brightness(1.2)'
+        }}
+      />
+
+      {/* Overlay Gradients */}
+      <div className="fixed inset-0 z-[1] bg-gradient-to-br from-white/90 via-white/40 to-[#FFCC00]/10" />
+
       {/* Brand Accents */}
       <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-[#E30613] via-[#FFCC00] to-[#E30613] z-50" />
 
-      {/* Decorative Elements */}
-      <div className="fixed inset-0 pointer-events-none opacity-40">
-        <div className="absolute -top-24 -left-24 w-96 h-96 bg-[#E30613]/5 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-[#FFCC00]/5 rounded-full blur-3xl" />
-      </div>
-
       <div className="relative z-10 flex flex-col min-h-screen">
         {/* Navigation / Header */}
-        <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-gray-100 px-6 py-4 flex items-center justify-between shadow-sm">
+        <header className="sticky top-0 z-40 bg-white/70 backdrop-blur-2xl border-b border-gray-100/50 px-6 py-4 flex items-center justify-between shadow-sm">
           <div className="flex items-center gap-6">
-            <div className="bg-white p-2 rounded-xl shadow-md border border-gray-100 group">
+            <div className="bg-white p-1 rounded-2xl shadow-xl shadow-red-500/10 border border-gray-100 group overflow-hidden">
               <img
-                src="https://media.licdn.com/dms/image/v2/C4E0BAQE8o-zH5W8gWQ/company-logo_200_200/company-logo_200_200/0/1630646197361?e=2147483647&v=beta&t=XfVp9R0FkY8fUQ-o0_W_wP7zH2L8X1v9K4x3K0Y_z8k"
+                src="/logo-altepsa.png"
                 alt="ALTEPSA"
-                className="h-10 w-auto group-hover:scale-110 transition-transform duration-500"
+                className="h-12 w-auto object-contain group-hover:scale-110 transition-transform duration-700"
               />
             </div>
             <div>
-              <h1 className="text-xl font-black tracking-tight text-[#E30613]">ALTEPSA <span className="text-[#FFCC00]">ELITE</span></h1>
-              <div className="flex items-center gap-2 text-[10px] uppercase font-bold tracking-widest text-gray-400">
-                <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-ping" />
-                Sincronización GDL Activa
+              <h1 className="text-xl font-black tracking-tighter text-[#E30613] flex items-center gap-2">
+                ALTEPSA
+                <span className="text-[10px] bg-[#FFCC00] text-black px-2 py-0.5 rounded-full font-black tracking-widest uppercase shadow-sm">ELITE</span>
+              </h1>
+              <div className="flex items-center gap-2 text-[10px] uppercase font-bold tracking-widest text-gray-500">
+                <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.5)]" />
+                NODO ALTA TECNOLOGÍA_GDL
               </div>
             </div>
           </div>
 
-          <nav className="hidden md:flex items-center gap-8 px-8 border-x border-gray-100 h-full">
-            <button className="text-[#E30613] font-bold text-xs uppercase tracking-widest border-b-2 border-[#E30613] pb-1">Dashboard</button>
-            <button className="text-gray-400 hover:text-gray-600 font-bold text-xs uppercase tracking-widest transition-colors">Logística</button>
-            <button className="text-gray-400 hover:text-gray-600 font-bold text-xs uppercase tracking-widest transition-colors">Producción</button>
+          <nav className="hidden lg:flex items-center gap-10 px-10 border-x border-gray-100/50 h-10">
+            <button className="text-[#E30613] font-black text-[11px] uppercase tracking-[0.2em] border-b-2 border-[#E30613] pb-1 transition-all">Inteligencia</button>
+            <button className="text-gray-400 hover:text-[#1A1A1A] font-black text-[11px] uppercase tracking-[0.2em] transition-all">Logística</button>
+            <button className="text-gray-400 hover:text-[#1A1A1A] font-black text-[11px] uppercase tracking-[0.2em] transition-all">Distribución</button>
           </nav>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-5">
+            <div className="hidden sm:flex flex-col items-end mr-2">
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">Status</span>
+              <span className="text-[10px] font-bold text-green-600 uppercase">Synchronized</span>
+            </div>
             <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+              whileHover={{ scale: 1.05, y: -2 }}
+              whileTap={{ scale: 0.95 }}
               onClick={handleCaptureLead}
-              className="bg-[#E30613] hover:bg-[#c40510] text-white px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] shadow-lg shadow-red-500/20 transition-all flex items-center gap-3"
+              className="bg-[#E30613] hover:bg-[#c40510] text-white px-7 py-3 rounded-2xl text-[10px] font-bold uppercase tracking-[0.2em] shadow-[0_10px_25px_-5px_rgba(227,6,19,0.3)] transition-all flex items-center gap-3 active:shadow-none"
             >
-              <Users size={14} />
+              <Plus size={16} />
               Capturar Lead
             </motion.button>
-            <div className="w-10 h-10 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center overflow-hidden">
-              <User size={20} className="text-gray-400" />
-            </div>
           </div>
         </header>
 
-        <main className="flex-1 p-6 md:p-10 lg:p-14 space-y-12">
-          {/* Welcome Section */}
-          <section className="flex flex-col md:flex-row md:items-end justify-between gap-8">
-            <div className="max-w-2xl">
-              <span className="inline-block px-3 py-1 bg-red-50 text-[#E30613] rounded-full text-[10px] font-black uppercase tracking-[0.2em] mb-4">Panel de Control de Leads</span>
-              <h2 className="text-5xl md:text-7xl font-black tracking-tight leading-[0.9] text-[#1A1A1A]">
-                Tecnología en <span className="text-[#E30613]">Aves</span> y Pastas
+        <main className="flex-1 p-6 md:p-12 lg:p-16 space-y-16">
+          {/* Hero Section */}
+          <section className="flex flex-col xl:flex-row xl:items-end justify-between gap-12">
+            <div className="max-w-3xl space-y-6">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-white/50 backdrop-blur-md border border-white/50 rounded-2xl shadow-sm">
+                <Sparkles size={14} className="text-[#FFCC00]" />
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#E30613]">Sales Intelligence v5.0</span>
+              </div>
+              <h2 className="text-6xl md:text-8xl font-black tracking-tighter leading-[0.85] text-[#1A1A1A]">
+                Potenciando la <br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#E30613] to-[#FFCC00]">Industria de Ave</span>
               </h2>
+              <p className="text-gray-500 font-medium max-w-lg text-lg leading-relaxed">
+                Gestión avanzada de prospectos y automatización logística para el sector alimentario jalisciense.
+              </p>
             </div>
-            <div className="flex flex-col items-end text-right">
-              <div className="text-4xl font-black text-[#E30613]">{(leads.length * 12.5).toFixed(0)}%</div>
-              <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Crecimiento Mensual_GDL</div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-white/40 backdrop-blur-xl p-6 rounded-3xl border border-white/50 shadow-sm">
+                <div className="text-3xl font-black text-[#E30613]">{(leads.length * 8.4).toFixed(1)}%</div>
+                <div className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Score Global_GDL</div>
+              </div>
+              <div className="bg-[#E30613] p-6 rounded-3xl shadow-xl shadow-red-500/20">
+                <div className="text-3xl font-black text-white">{leads.length}</div>
+                <div className="text-[9px] font-black text-white/60 uppercase tracking-widest">Leads Activos</div>
+              </div>
             </div>
           </section>
 
-          {/* Stats Bar */}
-          <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Core Stats Bar */}
+          <section className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <MetricCard
               label="Prospectos Totales"
               value={stats.total}
               icon={<Users className="text-[#E30613]" />}
-              sub="Detección Multicanal"
+              sub="Cargamento detectado"
             />
             <MetricCard
-              label="Interacción Activa"
+              label="Engagement IA"
               value={`${leads.filter(l => l.action_status?.includes('IA')).length}`}
-              icon={<Zap className="text-[#FFCC00]" />}
-              sub="Automatización Llama 3.3"
+              icon={<MessageSquare className="text-[#FFCC00]" />}
+              sub="Llama-3.3 en servicio"
               isHighlight
             />
             <MetricCard
-              label="Eficiencia Cierre"
+              label="Conversión Proyectada"
               value={stats.conversion}
-              icon={<Target className="text-green-600" />}
-              sub="GDL HQ Performance"
+              icon={<TrendingUp className="text-green-600" />}
+              sub="GDL Market Target"
             />
           </section>
 
-          <section className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-            {/* Leads List */}
-            <div className="lg:col-span-2 space-y-6">
-              <div className="flex items-center justify-between">
-                <h3 className="text-2xl font-black tracking-tight flex items-center gap-3">
-                  <Package size={24} className="text-[#E30613]" />
+          <section className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+            {/* Sales Pipeline */}
+            <div className="lg:col-span-8 space-y-8">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-6 px-4">
+                <h3 className="text-3xl font-black tracking-tight flex items-center gap-4">
+                  <div className="p-2 bg-[#E30613] rounded-xl shadow-lg shadow-red-500/10">
+                    <Package size={24} className="text-white" />
+                  </div>
                   Pipeline de Ventas
                 </h3>
-                <div className="flex gap-2">
+                <div className="flex p-1.5 bg-gray-100/50 backdrop-blur-lg rounded-2xl border border-gray-200/50">
                   {["All", "MQL", "SQL"].map(f => (
                     <button
                       key={f}
                       onClick={() => setFilterStatus(f)}
-                      className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${filterStatus === f ? 'bg-[#E30613] text-white' : 'bg-white text-gray-400 hover:bg-gray-50'}`}
+                      className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${filterStatus === f ? 'bg-white text-[#E30613] shadow-md' : 'text-gray-400 hover:text-gray-600'}`}
                     >
                       {f}
                     </button>
@@ -289,11 +317,14 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="grid gap-4">
+              <div className="grid gap-5">
                 {loading ? (
-                  <div className="h-64 flex flex-col items-center justify-center bg-white rounded-3xl border-2 border-dashed border-gray-100">
-                    <Loader2 className="animate-spin text-[#E30613] mb-4" size={32} />
-                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Procesando Cargamento de Datos...</p>
+                  <div className="h-96 flex flex-col items-center justify-center bg-white/40 backdrop-blur-xl rounded-[40px] border border-white/50 shadow-inner">
+                    <div className="relative">
+                      <div className="absolute inset-0 bg-[#E30613]/20 blur-xl rounded-full animate-pulse" />
+                      <Loader2 className="animate-spin text-[#E30613] relative z-10" size={48} />
+                    </div>
+                    <p className="text-[11px] font-black uppercase tracking-[0.4em] text-[#E30613] mt-8 animate-pulse">Sincronizando Nodo Logístico...</p>
                   </div>
                 ) : (
                   leads
@@ -305,37 +336,49 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Sidebar / Logs */}
-            <div className="space-y-8">
-              <div className="bg-white rounded-3xl p-8 border border-gray-100 shadow-xl shadow-gray-200/50">
-                <h4 className="text-[11px] font-black uppercase tracking-[0.3em] mb-6 text-gray-400 border-b border-gray-50 pb-4">Actividad Logística IA</h4>
-                <div className="space-y-6">
+            {/* AI Control Center */}
+            <div className="lg:col-span-4 space-y-10">
+              <div className="bg-white/60 backdrop-blur-3xl rounded-[40px] p-10 border border-white/50 shadow-2xl relative overflow-hidden">
+                <div className="absolute -top-10 -right-10 w-40 h-40 bg-[#FFCC00]/10 rounded-full blur-3xl opacity-50" />
+                <h4 className="text-[12px] font-black uppercase tracking-[0.3em] mb-8 text-[#E30613] border-b border-gray-100 pb-4">Activity Log_</h4>
+                <div className="space-y-8">
                   {leads && leads.length > 0 ? (
-                    leads.slice(0, 6).map((log, i) => (
-                      <div key={i} className="flex gap-4 items-start group">
-                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-all ${log.action_status?.includes('IA') ? 'bg-red-50 text-[#E30613]' : 'bg-gray-50 text-gray-400'}`}>
-                          <MessageCircle size={14} />
+                    leads.slice(0, 5).map((log, i) => (
+                      <div key={i} className="flex gap-5 items-start relative">
+                        {i !== 4 && <div className="absolute left-[15px] top-8 w-0.5 h-10 bg-gray-100" />}
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 z-10 transition-all shadow-lg ${log.action_status?.includes('IA') ? 'bg-[#E30613] text-white' : 'bg-white text-gray-300 border border-gray-100'
+                          }`}>
+                          <Zap size={12} fill={log.action_status?.includes('IA') ? "currentColor" : "none"} />
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-bold text-gray-800 truncate">{log.from_name || 'Procesando...'}</p>
-                          <p className="text-[10px] text-gray-400 font-medium uppercase tracking-tighter line-clamp-1">{log.action_status || 'Registrado'}</p>
+                        <div className="flex-1 min-w-0 pt-0.5">
+                          <p className="text-sm font-black text-gray-900 leading-none mb-1 truncate">{log.from_name || 'Sistema'}</p>
+                          <p className="text-[10px] text-gray-500 font-bold uppercase tracking-tighter">{log.action_status || 'Nueva Entrada'}</p>
                         </div>
-                        <span className="text-[9px] font-mono text-gray-300">
+                        <span className="text-[10px] font-mono text-gray-400 mt-1">
                           {log.created_at ? new Date(log.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
                         </span>
                       </div>
                     ))
                   ) : (
-                    <p className="text-[10px] text-gray-400 uppercase tracking-widest text-center py-4">Sin actividad reciente</p>
+                    <div className="flex flex-col items-center py-10 opacity-30">
+                      <Database size={32} className="mb-2" />
+                      <p className="text-[10px] font-black uppercase">Sin datos en red</p>
+                    </div>
                   )}
                 </div>
               </div>
 
-              <div className="bg-[#1A1A1A] rounded-3xl p-8 text-white shadow-2xl relative overflow-hidden group">
-                <div className="absolute top-0 right-0 w-24 h-24 bg-[#E30613] rounded-bl-full opacity-20 transition-all duration-700 group-hover:scale-150" />
-                <h4 className="text-[11px] font-black uppercase tracking-[0.3em] mb-4 text-[#FFCC00]">Soporte Técnico Elite</h4>
-                <p className="text-sm font-bold leading-relaxed mb-6">¿Necesitas ajustes en la respuesta del bot para productos específicos?</p>
-                <button className="w-full py-3 bg-[#E30613] rounded-xl text-xs font-black uppercase tracking-widest hover:brightness-110 transition-all">Hablar con Soporte</button>
+              <div className="bg-[#1A1A1A] rounded-[40px] p-10 text-white shadow-3xl relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-[#E30613] rounded-bl-full opacity-10 group-hover:opacity-40 transition-all duration-1000 group-hover:scale-[2]" />
+                <div className="relative z-10">
+                  <h4 className="text-[12px] font-black uppercase tracking-[0.3em] mb-4 text-[#FFCC00]">Soporte ALTEPSA Elite</h4>
+                  <p className="text-gray-400 text-sm font-medium leading-relaxed mb-10">
+                    Sincronización directa con el centro de distribución de Guadalajara para pedidos masivos.
+                  </p>
+                  <button className="w-full py-4 bg-[#E30613] rounded-2xl text-xs font-black uppercase tracking-[0.2em] transform active:scale-95 transition-all shadow-xl shadow-red-600/20 hover:brightness-110">
+                    Contactar HQ
+                  </button>
+                </div>
               </div>
             </div>
           </section>
@@ -347,17 +390,17 @@ export default function Home() {
 
 function MetricCard({ label, value, icon, sub, isHighlight }: any) {
   return (
-    <div className={`p-8 rounded-3xl transition-all border group relative overflow-hidden h-32 flex flex-col justify-center ${isHighlight ? 'bg-white border-[#E30613]/20 shadow-xl shadow-red-500/5' : 'bg-white border-gray-100'
+    <div className={`p-10 rounded-[40px] transition-all border group relative overflow-hidden ${isHighlight ? 'bg-white border-[#E30613]/30 shadow-2xl shadow-red-500/10' : 'bg-white/60 backdrop-blur-xl border-white/50 shadow-xl shadow-gray-200/50'
       }`}>
-      <div className="flex justify-between items-center mb-2">
-        <div className="p-2 rounded-lg bg-gray-50 group-hover:bg-red-50 transition-colors">
+      <div className="flex justify-between items-start mb-6">
+        <div className="p-3.5 rounded-2xl bg-gray-50 group-hover:bg-[#E30613]/10 transition-colors shadow-sm">
           {icon}
         </div>
-        <div className="text-3xl font-black tracking-tighter">{value}</div>
+        <div className="text-4xl font-black tracking-tighter text-gray-900">{value}</div>
       </div>
       <div>
-        <p className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400">{label}</p>
-        <div className="text-[8px] font-bold text-[#E30613] mt-1 opacity-0 group-hover:opacity-100 transition-opacity uppercase">{sub}</div>
+        <p className="text-[11px] font-black uppercase tracking-[0.2em] text-gray-400 mb-1">{label}</p>
+        <div className="text-[9px] font-bold text-[#E30613] opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0 uppercase tracking-widest">{sub}</div>
       </div>
     </div>
   );
@@ -371,42 +414,57 @@ function LeadCardItem({ lead, onSend }: any) {
 
   return (
     <motion.div
-      whileHover={{ x: 10 }}
-      className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl transition-all flex flex-col md:flex-row items-center gap-6 group"
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      whileHover={{ x: 12, backgroundColor: "rgba(255,255,255,0.9)" }}
+      className="bg-white/80 backdrop-blur-lg p-7 rounded-[32px] border border-white/50 shadow-sm hover:shadow-2xl transition-all flex flex-col md:flex-row items-center gap-8 group relative overflow-hidden"
     >
-      <div className={`w-14 h-14 rounded-xl flex items-center justify-center font-black text-xl shadow-lg transition-all duration-500 ${isBotActive ? 'bg-[#E30613] text-white -rotate-3 scale-110' : 'bg-gray-100 text-gray-400'
+      {isBotActive && (
+        <div className="absolute top-0 right-0 w-32 h-32 bg-red-50 -mr-16 -mt-16 rounded-full blur-2xl opacity-50" />
+      )}
+
+      <div className={`w-20 h-20 rounded-3xl flex items-center justify-center font-black text-2xl shadow-2xl transition-all duration-700 relative z-10 ${isBotActive ? 'bg-gradient-to-br from-[#E30613] to-[#c40510] text-white -rotate-6 scale-110 shadow-red-500/30' : 'bg-gray-100 text-gray-400 group-hover:bg-white group-hover:text-[#E30613] border border-transparent group-hover:border-gray-100'
         }`}>
         {initial}
       </div>
 
-      <div className="flex-1 text-center md:text-left min-w-0">
-        <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mb-1">
-          <h4 className="text-lg font-black tracking-tight group-hover:text-[#E30613] transition-colors uppercase">{name}</h4>
-          <span className="px-2 py-0.5 bg-gray-100 text-gray-500 rounded text-[9px] font-black uppercase tracking-widest">{lead.stage || 'MQL'}</span>
-          {isBotActive && (
-            <span className="flex items-center gap-1.5 px-2 py-0.5 bg-red-50 text-[#E30613] rounded text-[9px] font-black uppercase tracking-widest">
-              <span className="w-1.5 h-1.5 bg-[#E30613] rounded-full animate-pulse" />
-              IA Atendiendo
-            </span>
-          )}
+      <div className="flex-1 text-center md:text-left min-w-0 relative z-10">
+        <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 mb-2">
+          <h4 className="text-xl font-black tracking-tight text-gray-900 group-hover:text-[#E30613] transition-colors uppercase">{name}</h4>
+          <div className="flex gap-2">
+            <span className="px-3 py-1 bg-gray-100 text-gray-500 rounded-full text-[9px] font-black uppercase tracking-widest">{lead.stage || 'MQL'}</span>
+            {isBotActive && (
+              <span className="flex items-center gap-2 px-3 py-1 bg-[#E30613] text-white rounded-full text-[9px] font-black uppercase tracking-[0.2em] shadow-lg shadow-red-500/10">
+                <span className="w-1.5 h-1.5 bg-white rounded-full animate-ping" />
+                ALTEPSA BOT
+              </span>
+            )}
+          </div>
         </div>
-        <p className="text-xs text-gray-400 font-bold flex items-center justify-center md:justify-start gap-2">
-          <Smartphone size={12} /> {lead.phone || 'Sin número'}
-        </p>
-        <p className="text-gray-500 mt-2 italic text-sm line-clamp-1 border-l-2 border-[#FFCC00] pl-3 opacity-60 group-hover:opacity-100 transition-opacity">
-          "{lead.body_preview || 'Sin mensaje previo registrado en el cargamento'}"
+        <div className="flex items-center justify-center md:justify-start gap-4 mb-3">
+          <p className="text-[11px] text-gray-400 font-bold flex items-center gap-2">
+            <Smartphone size={14} className="text-[#E30613]" /> {lead.phone || 'Sin contacto'}
+          </p>
+          <div className="w-1 h-1 bg-gray-300 rounded-full" />
+          <p className="text-[11px] text-[#FFCC00] font-black uppercase tracking-widest">
+            Score: {lead.score || 0}%
+          </p>
+        </div>
+        <p className="text-gray-400 font-medium text-sm line-clamp-1 border-l-4 border-[#FFCC00]/50 pl-4 bg-gray-50/50 py-1.5 rounded-r-lg group-hover:bg-[#FFCC00]/5 transition-colors">
+          "{lead.body_preview || 'Sin registro de comunicación previa cargado'}"
         </p>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3 relative z-10">
         <button
           onClick={onSend}
-          className="p-4 bg-green-500 hover:bg-green-600 text-white rounded-xl shadow-lg shadow-green-500/20 transition-all active:scale-90"
+          className="w-16 h-16 bg-[#25D366] hover:bg-[#128C7E] text-white rounded-2xl shadow-xl shadow-green-500/30 transition-all active:scale-90 flex items-center justify-center group/btn"
         >
-          <Send size={18} />
+          <Send size={24} className="group-hover/btn:translate-x-1 group-hover/btn:-translate-y-1 transition-transform" />
         </button>
-        <div className="w-10 h-10 flex items-center justify-center text-gray-300 hover:text-gray-600 cursor-pointer">
-          <ChevronRight size={20} />
+        <div className="w-12 h-16 flex items-center justify-center text-gray-300 hover:text-[#E30613] cursor-pointer transition-colors bg-gray-50 rounded-2xl border border-gray-100">
+          <ChevronRight size={24} />
         </div>
       </div>
     </motion.div>
