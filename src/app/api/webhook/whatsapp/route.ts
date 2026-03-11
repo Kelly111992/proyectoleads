@@ -6,27 +6,19 @@ import { aiService } from '@/lib/ai';
 export async function POST(req: Request) {
     try {
         const body = await req.json();
-        console.log('--- WEBHOOK EVOLUTION RECEIVED (ALTEPSA CRM ACTIVE) ---');
-        console.log('Event:', body.event);
+        console.log('--- WEBHOOK EVOLUTION RECEIVED (ALTEPSA ALIGNMENT) ---');
 
         const event = body.event;
         const data = body.data;
 
         if (event === 'messages.upsert') {
-            // Extraer key de forma robusta (Evolution API v1 y v2)
             const key = data?.key || data?.message?.key;
-            if (!key) {
-                console.log('No se encontró key en el payload, ignorando.');
-                return NextResponse.json({ status: 'ignored', reason: 'no_key' });
-            }
+            if (!key) return NextResponse.json({ status: 'ignored' });
 
             const fromMe = key.fromMe;
-
             if (!fromMe) {
                 const phone = key.remoteJid?.split('@')[0];
-                if (!phone) {
-                    return NextResponse.json({ status: 'ignored', reason: 'no_phone' });
-                }
+                if (!phone) return NextResponse.json({ status: 'ignored' });
 
                 const pushName = data.pushName || 'Prospecto';
                 const content = data.message?.conversation
@@ -34,86 +26,50 @@ export async function POST(req: Request) {
                     || data.message?.imageMessage?.caption
                     || 'Mensaje multimedia recibido';
 
-                console.log(`📩 Mensaje de: ${pushName} (${phone}): ${content}`);
+                // ═══ PASO 1: Respuesta IA (Sincronizada con Simulador) ═══
+                let aiResponse = await aiService.generateResponse(pushName, content);
 
-                // ═══ PASO 1: Generar respuesta IA ═══
-                console.log('🤖 Generando respuesta IA...');
-                let aiResponse = '';
-                try {
-                    aiResponse = await aiService.generateResponse(pushName, content);
-                    console.log('✅ IA respondió:', aiResponse.substring(0, 80) + '...');
-                } catch (aiErr: any) {
-                    console.error('⚠️ Error IA, usando fallback:', aiErr.message);
-                    aiResponse = `¡Hola ${pushName}! Gracias por tu interés en ALTEPSA. Un asesor te contactará en breve para atenderte.`;
-                }
+                // ═══ PASO 2: CRM - Guardar/Actualizar Lead ═══
+                const vendors = ["Arkel Sales", "Claudia Leads", "IA de Ventas"];
 
-                // ═══ PASO 2: CRM - Guardar Lead ═══
+                // Buscar si ya existe para no cambiar el agente asignado
                 const { data: existingLead } = await supabase
                     .from('leads')
-                    .select('*')
+                    .select('assigned_agent')
                     .eq('phone', phone)
                     .single();
 
-                if (!existingLead) {
-                    // Asignación automática Round Robin
-                    const vendedores = ["Arkel Sales", "Claudia Leads", "Elite AI"];
-                    const { count } = await supabase.from('leads').select('*', { count: 'exact', head: true });
-                    const assignedTo = vendedores[(count || 0) % vendedores.length];
-                    console.log(`👤 NUEVO LEAD: ${pushName} → Asignado a: ${assignedTo}`);
+                const assignedTo = existingLead?.assigned_agent || vendors[Math.floor(Math.random() * vendors.length)];
 
-                    // Insert básico (campos que seguro existen)
-                    const { error: insertErr } = await supabase
-                        .from('leads')
-                        .insert([{
-                            from_address: `${phone}@whatsapp.net`,
-                            from_name: pushName,
-                            phone: phone,
-                            source: 'WhatsApp_AI',
-                            body_preview: content,
-                            score: 85,
-                            stage: 'MQL',
-                            action_status: 'IA_Respondiendo'
-                        }]);
+                // Upsert para manejar unicidad de teléfono igual que en el simulador
+                const { error: upsertErr } = await supabase
+                    .from('leads')
+                    .upsert([{
+                        from_address: `${phone}@whatsapp.net`,
+                        from_name: pushName,
+                        phone: phone,
+                        source: 'WhatsApp_AI',
+                        body_preview: content,
+                        score: 85,
+                        stage: 'Nuevo', // Emparejado con STAGES[0] de page.tsx
+                        action_status: 'IA_Conversando',
+                        assigned_agent: assignedTo
+                    }], { onConflict: 'phone' });
 
-                    if (insertErr) {
-                        console.error('⚠️ Error insertando lead:', insertErr.message);
-                    } else {
-                        console.log('💾 Lead guardado en Supabase');
-                        // Intentar agregar campos CRM
-                        try {
-                            await supabase
-                                .from('leads')
-                                .update({ assigned_agent: assignedTo })
-                                .eq('phone', phone);
-                            console.log('📋 Campos CRM asignados');
-                        } catch { console.log('ℹ️ Campos CRM opcionales no disponibles'); }
-                    }
-                } else {
-                    console.log(`🔄 Lead existente: ${pushName}`);
-                    await supabase
-                        .from('leads')
-                        .update({
-                            body_preview: content,
-                            action_status: 'Conversación_IA'
-                        })
-                        .eq('phone', phone);
-                }
+                if (upsertErr) console.error('⚠️ CRM Error:', upsertErr.message);
 
                 // ═══ PASO 3: Enviar respuesta WhatsApp ═══
-                console.log('📱 Enviando respuesta vía Evolution API...');
                 try {
                     await evolutionApi.sendMessage(phone, aiResponse);
-                    console.log('✅ Respuesta enviada al prospecto');
                 } catch (sendErr: any) {
-                    console.error('⚠️ Error enviando WhatsApp:', sendErr.message);
-                    // No lanzar error - el lead ya se guardó
+                    console.error('⚠️ WA Send Error:', sendErr.message);
                 }
             }
         }
 
         return NextResponse.json({ status: 'success' });
     } catch (error: any) {
-        console.error('❌ Webhook Error:', error.message);
-        return NextResponse.json({ status: 'error', message: error.message }, { status: 500 });
+        console.error('❌ Webhook Critical Error:', error.message);
+        return NextResponse.json({ status: 'error' }, { status: 500 });
     }
 }
