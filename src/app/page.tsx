@@ -296,9 +296,11 @@ export default function Home() {
                     <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Procesando Cargamento de Datos...</p>
                   </div>
                 ) : (
-                  leads.map(lead => (
-                    <LeadCardItem key={lead.id} lead={lead} onSend={() => handleWhatsAppQuickSend(lead.phone, lead.from_name, lead.id)} />
-                  ))
+                  leads
+                    .filter(lead => lead && (filterStatus === "All" || lead.stage === filterStatus || lead.type === filterStatus))
+                    .map(lead => (
+                      <LeadCardItem key={lead.id} lead={lead} onSend={() => handleWhatsAppQuickSend(lead.phone || '', lead.from_name || 'Prospecto', lead.id)} />
+                    ))
                 )}
               </div>
             </div>
@@ -308,19 +310,24 @@ export default function Home() {
               <div className="bg-white rounded-3xl p-8 border border-gray-100 shadow-xl shadow-gray-200/50">
                 <h4 className="text-[11px] font-black uppercase tracking-[0.3em] mb-6 text-gray-400 border-b border-gray-50 pb-4">Actividad Logística IA</h4>
                 <div className="space-y-6">
-                  {leads.slice(0, 6).map((log, i) => (
-                    <div key={i} className="flex gap-4 items-start group">
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-all ${log.action_status?.includes('IA') ? 'bg-red-50 text-[#E30613]' : 'bg-gray-50 text-gray-400'
-                        }`}>
-                        <MessageCircle size={14} />
+                  {leads && leads.length > 0 ? (
+                    leads.slice(0, 6).map((log, i) => (
+                      <div key={i} className="flex gap-4 items-start group">
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-all ${log.action_status?.includes('IA') ? 'bg-red-50 text-[#E30613]' : 'bg-gray-50 text-gray-400'}`}>
+                          <MessageCircle size={14} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-bold text-gray-800 truncate">{log.from_name || 'Procesando...'}</p>
+                          <p className="text-[10px] text-gray-400 font-medium uppercase tracking-tighter line-clamp-1">{log.action_status || 'Registrado'}</p>
+                        </div>
+                        <span className="text-[9px] font-mono text-gray-300">
+                          {log.created_at ? new Date(log.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                        </span>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold text-gray-800 truncate">{log.from_name}</p>
-                        <p className="text-[10px] text-gray-400 font-medium uppercase tracking-tighter line-clamp-1">{log.action_status || 'Registrado'}</p>
-                      </div>
-                      <span className="text-[9px] font-mono text-gray-300">{new Date(log.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                    </div>
-                  ))}
+                    ))
+                  ) : (
+                    <p className="text-[10px] text-gray-400 uppercase tracking-widest text-center py-4">Sin actividad reciente</p>
+                  )}
                 </div>
               </div>
 
@@ -357,7 +364,11 @@ function MetricCard({ label, value, icon, sub, isHighlight }: any) {
 }
 
 function LeadCardItem({ lead, onSend }: any) {
+  if (!lead) return null;
   const isBotActive = lead.action_status?.includes('IA');
+  const name = lead.from_name || "Sin nombre";
+  const initial = name.charAt(0).toUpperCase();
+
   return (
     <motion.div
       whileHover={{ x: 10 }}
@@ -365,13 +376,13 @@ function LeadCardItem({ lead, onSend }: any) {
     >
       <div className={`w-14 h-14 rounded-xl flex items-center justify-center font-black text-xl shadow-lg transition-all duration-500 ${isBotActive ? 'bg-[#E30613] text-white -rotate-3 scale-110' : 'bg-gray-100 text-gray-400'
         }`}>
-        {lead.from_name[0]}
+        {initial}
       </div>
 
       <div className="flex-1 text-center md:text-left min-w-0">
         <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mb-1">
-          <h4 className="text-lg font-black tracking-tight group-hover:text-[#E30613] transition-colors uppercase">{lead.from_name}</h4>
-          <span className="px-2 py-0.5 bg-gray-100 text-gray-500 rounded text-[9px] font-black uppercase tracking-widest">{lead.stage}</span>
+          <h4 className="text-lg font-black tracking-tight group-hover:text-[#E30613] transition-colors uppercase">{name}</h4>
+          <span className="px-2 py-0.5 bg-gray-100 text-gray-500 rounded text-[9px] font-black uppercase tracking-widest">{lead.stage || 'MQL'}</span>
           {isBotActive && (
             <span className="flex items-center gap-1.5 px-2 py-0.5 bg-red-50 text-[#E30613] rounded text-[9px] font-black uppercase tracking-widest">
               <span className="w-1.5 h-1.5 bg-[#E30613] rounded-full animate-pulse" />
@@ -380,7 +391,7 @@ function LeadCardItem({ lead, onSend }: any) {
           )}
         </div>
         <p className="text-xs text-gray-400 font-bold flex items-center justify-center md:justify-start gap-2">
-          <Smartphone size={12} /> {lead.phone}
+          <Smartphone size={12} /> {lead.phone || 'Sin número'}
         </p>
         <p className="text-gray-500 mt-2 italic text-sm line-clamp-1 border-l-2 border-[#FFCC00] pl-3 opacity-60 group-hover:opacity-100 transition-opacity">
           "{lead.body_preview || 'Sin mensaje previo registrado en el cargamento'}"
