@@ -6,15 +6,18 @@ import {
   Search, Clock, Activity, AlertCircle, Phone,
   Command, Sparkles, Send, X, CheckCircle2,
   FileText, BrainCircuit, BarChart2, ShieldCheck,
-  PlayCircle, MapPin, Gauge, PackageSearch
+  PlayCircle, MapPin, Gauge, PackageSearch, Lock
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 
 const STAGES = ["Nuevo", "Contactado", "Cotizando", "Negociación", "Cierre"];
 
 export default function Home() {
   const [mounted, setMounted] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [pin, setPin] = useState("");
+
   const [activeTab, setActiveTab] = useState("inbox");
   const [selectedLead, setSelectedLead] = useState<any | null>(null);
   const [leads, setLeads] = useState<any[]>([]);
@@ -23,9 +26,13 @@ export default function Home() {
 
   // Modals
   const [showSimulateModal, setShowSimulateModal] = useState(false);
+  const [simMode, setSimMode] = useState<"form" | "chat">("form");
   const [simName, setSimName] = useState("");
   const [simPhone, setSimPhone] = useState("");
-  const [simMsg, setSimMsg] = useState("");
+  const [simInput, setSimInput] = useState("");
+  const [chatMsgs, setChatMsgs] = useState<{ role: 'user' | 'ai', text: string }[]>([]);
+  const [chatAiThinking, setChatAiThinking] = useState(false);
+  const chatEndRef = useRef<HTMLDivElement>(null);
 
   // AI Reply State
   const [aiGenerating, setAiGenerating] = useState(false);
@@ -63,12 +70,45 @@ export default function Home() {
     if (error) console.log(error);
   };
 
-  const submitSimulatedLead = async (e: React.FormEvent) => {
+  // SimChat Handlers
+  const startSimChat = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!simName || !simPhone || !simMsg) return;
+    if (!simName || !simPhone) return;
+    setSimMode("chat");
+    setChatMsgs([]);
+  };
+
+  const deliverSimMsg = () => {
+    if (!simInput) return;
+    const newMsgs = [...chatMsgs, { role: 'user', text: simInput } as const];
+    setChatMsgs(newMsgs);
+    setSimInput("");
+    setChatAiThinking(true);
+
+    // Simulate AI response based on context
+    setTimeout(() => {
+      setChatAiThinking(false);
+      const aiResponseText = `¡Hola ${simName.split(' ')[0]}! 😊 Claro, soy el Asistente Comercial de ALTEPSA. Registramos tu interés. Contamos con pollo calidad suprema, corte y canal. ¿Te gustaría cotizar una cantidad específica para entrega?`;
+      setChatMsgs([...newMsgs, { role: 'ai', text: aiResponseText }]);
+    }, 2000);
+  };
+
+  useEffect(() => {
+    if (chatEndRef.current) {
+      chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [chatMsgs, chatAiThinking]);
+
+  const finishSimulatedLead = async () => {
+    if (chatMsgs.length === 0) {
+      setShowSimulateModal(false);
+      return;
+    }
 
     const assignedAgent = agents[leads.length % agents.length].name;
     const score = Math.floor(Math.random() * 30) + 70; // 70-100
+    // Get last user message as body preview
+    const bodyPreview = chatMsgs.filter(m => m.role === 'user').pop()?.text || "Chat simulado sin mensajes del usuario.";
 
     const { error } = await supabase.from('leads').insert([{
       from_address: `sim_${Date.now()}@altepsa.com`,
@@ -77,19 +117,74 @@ export default function Home() {
       source: 'WhatsApp_AI',
       score: score,
       stage: 'Nuevo',
-      action_status: 'En Espera de Asesor',
+      action_status: 'IA_Conversando',
       assigned_agent: assignedAgent,
-      body_preview: simMsg
+      body_preview: bodyPreview
     }]);
 
     if (!error) {
       setShowSimulateModal(false);
-      setSimName(""); setSimPhone(""); setSimMsg("");
+      setSimMode("form");
+      setSimName(""); setSimPhone(""); setChatMsgs([]);
       fetchLeads();
     } else {
       alert("Error de inserción: " + error.message);
     }
   };
+
+  const LoginScreen = () => (
+    <div className="min-h-screen bg-[#09090b] flex items-center justify-center p-4 selection:bg-[#E30613]/30">
+      <div className="bg-black/80 backdrop-blur-xl border border-zinc-900 shadow-2xl p-10 rounded-[2rem] w-full max-w-md flex flex-col items-center relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-[#E30613]/10 rounded-full blur-[100px] pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#FFCC00]/5 rounded-full blur-[100px] pointer-events-none" />
+
+        <div className="relative w-32 h-32 mb-8 flex items-center justify-center">
+          {/* SVG Animated Border for Logo */}
+          <svg className="absolute inset-0 w-full h-full animate-[spin_10s_linear_infinite]" viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="48" fill="none" stroke="#E30613" strokeWidth="1.5" strokeDasharray="10 6" opacity="0.8" />
+            <circle cx="50" cy="50" r="42" fill="none" stroke="#FFCC00" strokeWidth="1" strokeDasharray="20 10" opacity="0.4" className="animate-[spin_6s_linear_infinite_reverse]" style={{ transformOrigin: 'center' }} />
+          </svg>
+          <div className="absolute inset-3 bg-zinc-950 rounded-full flex items-center justify-center overflow-hidden border border-zinc-800">
+            <img src="/logo_nuevo_1.png" alt="ALTEPSA" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none' }} />
+          </div>
+        </div>
+
+        <h1 className="text-2xl font-black text-white uppercase tracking-[0.2em] mb-2 text-center">
+          ALTEPSA <span className="text-[#E30613]">COMEX</span>
+        </h1>
+        <p className="text-xs text-zinc-500 font-mono mb-8 text-center bg-zinc-950 px-3 py-1 rounded-full border border-zinc-900">
+          <Lock size={12} className="inline mr-1 text-[#FFCC00]" />
+          Acceso corporativo restringido
+        </p>
+
+        <div className="w-full relative">
+          <input
+            type="password"
+            value={pin}
+            onChange={e => setPin(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                if (pin === "1234") setIsAuthenticated(true);
+                else alert("PIN Invalido (Hint: 1234)");
+              }
+            }}
+            placeholder="••••"
+            className="w-full bg-zinc-950 border border-zinc-800 text-center tracking-[1em] text-white text-3xl py-4 rounded-xl outline-none focus:border-[#E30613] transition-colors focus:shadow-[0_0_20px_rgba(227,6,19,0.2)]"
+            autoFocus
+          />
+          <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none opacity-20">
+            <ShieldCheck size={24} className="text-[#E30613]" />
+          </div>
+        </div>
+        <button
+          onClick={() => { if (pin === "1234") setIsAuthenticated(true); else alert("PIN Invalido (Hint: 1234)"); }}
+          className="w-full mt-6 bg-gradient-to-r from-[#E30613] to-[#B0000A] text-white py-4 rounded-xl font-black uppercase tracking-widest hover:shadow-[0_0_30px_rgba(227,6,19,0.4)] transition-all hover:scale-[1.02]"
+        >
+          Autenticar
+        </button>
+      </div>
+    </div>
+  );
 
   const generateAISuggestion = () => {
     setAiGenerating(true);
@@ -146,6 +241,7 @@ export default function Home() {
   };
 
   if (!mounted) return null;
+  if (!isAuthenticated) return <LoginScreen />;
 
   return (
     <div className="min-h-screen text-zinc-300 font-sans selection:bg-[#E30613]/30 selection:text-white bg-[#09090b] overflow-hidden flex flex-col">
@@ -156,8 +252,13 @@ export default function Home() {
       <header className="relative z-40 bg-[#09090b]/80 backdrop-blur-xl border-b border-white/5 h-16 flex items-center justify-between px-6 shrink-0">
         <div className="flex items-center gap-8">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-zinc-950 border border-zinc-800 flex items-center justify-center shadow-[0_0_15px_rgba(227,6,19,0.15)] overflow-hidden">
-              <img src="/altepsa-logo.png" alt="ALTEPSA" className="w-full h-full object-cover filter contrast-125" onError={(e) => { e.currentTarget.src = 'https://via.placeholder.com/40x40?text=AL'; }} />
+            <div className="relative w-10 h-10 flex items-center justify-center">
+              <svg className="absolute inset-0 w-full h-full animate-[spin_10s_linear_infinite]" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="48" fill="none" stroke="#FFCC00" strokeWidth="2" strokeDasharray="10 8" opacity="0.6" />
+              </svg>
+              <div className="absolute inset-1 rounded-full overflow-hidden bg-black flex items-center justify-center border border-zinc-800">
+                <img src="/logo_nuevo_1.png" alt="ALTEPSA" className="w-full h-full object-cover p-1" onError={(e) => { e.currentTarget.style.display = 'none' }} />
+              </div>
             </div>
             <div>
               <h1 className="text-sm font-bold text-white tracking-wide">
@@ -203,49 +304,106 @@ export default function Home() {
         {activeTab === 'agents' && <AgentsView />}
       </main>
 
-      {/* MODAL SIMULAR CONVERSACIÓN */}
+      {/* MODAL SIMULAR CONVERSACIÓN CHAT UI */}
       <AnimatePresence>
         {showSimulateModal && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-            <motion.form
+            <motion.div
               initial={{ scale: 0.95, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.95, y: 20 }}
-              onSubmit={submitSimulatedLead}
-              className="w-full max-w-md bg-zinc-950 border border-white/10 rounded-2xl shadow-2xl overflow-hidden p-6"
+              className="w-full max-w-md bg-zinc-950 border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col h-[600px] max-h-[90vh]"
             >
-              <div className="flex justify-between items-center mb-6">
+              {/* Modal Header */}
+              <div className="p-5 border-b border-zinc-900 flex justify-between items-center bg-black/50">
                 <div>
-                  <h3 className="text-lg font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                    <MessageSquare className="text-[#25D366]" /> Ingresar Prospecto
+                  <h3 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
+                    <MessageSquare className="text-[#25D366]" size={16} /> Chat Simulator
                   </h3>
-                  <p className="text-xs text-zinc-400 mt-1">Sustituye la captura vía WhatsApp para pruebas locales.</p>
+                  <p className="text-[10px] text-zinc-500 font-mono mt-0.5">{simMode === 'form' ? 'Paso 1: Configurar Perfil' : `Chateando como: ${simName}`}</p>
                 </div>
-                <button type="button" onClick={() => setShowSimulateModal(false)} className="text-zinc-500 hover:text-white"><X size={20} /></button>
+                <button onClick={() => setShowSimulateModal(false)} className="text-zinc-500 hover:text-white p-1 rounded-full"><X size={18} /></button>
               </div>
 
-              <div className="space-y-4">
-                <div>
-                  <label className="text-[10px] font-black uppercase text-zinc-500 block mb-1">Nombre Comercial</label>
-                  <input required value={simName} onChange={e => setSimName(e.target.value)} type="text" placeholder="Ej. Distribuidora El Paisa" className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2 text-sm text-white outline-none focus:border-[#FFCC00]" />
-                </div>
-                <div>
-                  <label className="text-[10px] font-black uppercase text-zinc-500 block mb-1">WhatsApp de Contacto</label>
-                  <input required value={simPhone} onChange={e => setSimPhone(e.target.value)} type="tel" placeholder="Ej. 5213318213624" className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2 text-sm text-white font-mono outline-none focus:border-[#FFCC00]" />
-                </div>
-                <div>
-                  <label className="text-[10px] font-black uppercase text-zinc-500 block mb-1">Mensaje Recibido (Contexto)</label>
-                  <textarea required value={simMsg} onChange={e => setSimMsg(e.target.value)} placeholder="Ej. Tienen pollo en canal calibre 4?" className="w-full h-24 bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2 text-sm text-white outline-none focus:border-[#FFCC00] resize-none" />
-                </div>
-              </div>
+              {/* Modal Body */}
+              <div className="flex-1 overflow-hidden flex flex-col relative w-full">
+                {simMode === 'form' ? (
+                  <form onSubmit={startSimChat} className="p-6 space-y-5 h-full overflow-y-auto">
+                    <div>
+                      <label className="text-[10px] font-black uppercase text-zinc-500 block mb-1">Nombre Prospecto</label>
+                      <input required value={simName} onChange={e => setSimName(e.target.value)} type="text" placeholder="Ej. Distribuidora El Paisa" className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-3 text-sm text-white outline-none focus:border-[#25D366]" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-black uppercase text-zinc-500 block mb-1">Número de Prueba</label>
+                      <input required value={simPhone} onChange={e => setSimPhone(e.target.value)} type="number" placeholder="Ej. 3315185120" className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-3 text-sm text-white font-mono outline-none focus:border-[#25D366]" />
+                    </div>
 
-              <div className="mt-8 flex gap-3">
-                <button type="button" onClick={() => setShowSimulateModal(false)} className="flex-1 py-2 rounded-lg bg-zinc-900 text-zinc-400 text-xs font-bold uppercase hover:bg-zinc-800">Cancelar</button>
-                <button type="submit" className="flex-1 py-2 rounded-lg bg-[#25D366] text-white text-xs font-black uppercase tracking-widest hover:bg-[#1DA851] flex justify-center items-center gap-2">
-                  <Send size={14} /> Simular Chat
-                </button>
+                    <div className="pt-4">
+                      <button type="submit" className="w-full py-3 rounded-lg bg-[#25D366] text-white text-xs font-black uppercase tracking-widest hover:bg-[#1DA851] flex justify-center items-center gap-2 shadow-lg shadow-green-900/20">
+                        Siguiente: Iniciar Chat <Send size={14} />
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  <div className="flex-1 flex flex-col bg-[#0b141a]">
+                    {/* Chat History */}
+                    <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
+                      <div className="flex justify-center mb-4">
+                        <span className="text-[10px] bg-zinc-800/50 text-zinc-400 px-3 py-1 rounded-lg">Hoy</span>
+                      </div>
+
+                      {chatMsgs.map((msg, i) => (
+                        <div key={i} className={`flex w-full ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                          <div className={`max-w-[80%] rounded-xl p-3 text-sm ${msg.role === 'user' ? 'bg-[#005c4b] text-[#e9edef] rounded-tr-none' : 'bg-[#202c33] text-[#e9edef] rounded-tl-none'}`}>
+                            {msg.text}
+                          </div>
+                        </div>
+                      ))}
+
+                      {chatAiThinking && (
+                        <div className="flex w-full justify-start">
+                          <div className="max-w-[80%] rounded-xl p-3 bg-[#202c33] text-zinc-400 rounded-tl-none flex items-center gap-2 text-xs">
+                            <div className="flex gap-1">
+                              <div className="w-1.5 h-1.5 bg-zinc-500 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                              <div className="w-1.5 h-1.5 bg-zinc-500 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                              <div className="w-1.5 h-1.5 bg-zinc-500 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                            </div>
+                            IA escribiendo...
+                          </div>
+                        </div>
+                      )}
+                      <div ref={chatEndRef} />
+                    </div>
+
+                    {/* Chat Input */}
+                    <div className="bg-[#202c33] p-3 flex items-center gap-2 shrink-0">
+                      <input
+                        value={simInput}
+                        onChange={e => setSimInput(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') deliverSimMsg() }}
+                        placeholder="Escribe un mensaje de prueba..."
+                        className="flex-1 bg-[#2a3942] rounded-lg px-4 py-2.5 text-sm outline-none text-[#e9edef] placeholder:text-zinc-500"
+                        disabled={chatAiThinking}
+                      />
+                      <button
+                        onClick={deliverSimMsg}
+                        disabled={chatAiThinking || !simInput}
+                        className="w-10 h-10 rounded-full bg-[#00a884] hover:bg-[#008f6f] flex items-center justify-center text-white disabled:opacity-50 transition-colors"
+                      >
+                        <Send size={16} className="-ml-1" />
+                      </button>
+                    </div>
+
+                    {/* Chat Footer Actions */}
+                    <div className="bg-[#111] p-3 border-t border-zinc-900 flex justify-end gap-2 shrink-0">
+                      <button onClick={finishSimulatedLead} className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-bold rounded flex items-center gap-2">
+                        Guardar Lead y Cerrar
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
-            </motion.form>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -373,10 +531,9 @@ export default function Home() {
               transition={{ type: 'spring', damping: 30, stiffness: 250 }}
               className="w-full md:w-[480px] bg-zinc-950 border-l border-zinc-800 shrink-0 flex flex-col absolute right-0 top-0 bottom-0 z-50 shadow-2xl"
             >
-              {/* Profile Header */}
               <div className="p-6 border-b border-zinc-800 bg-black flex flex-col justify-end relative h-40 overflow-hidden">
                 <div className="absolute inset-0 z-0">
-                  <img src="/pollo1.jpg" alt="Fondo" className="w-full h-full object-cover opacity-10 grayscale hover:grayscale-0 hover:opacity-20 transition-all duration-700" onError={(e) => { e.currentTarget.style.display = 'none' }} />
+                  <img src="/pollo3.jpg" alt="Fondo" className="w-full h-full object-cover opacity-10 grayscale hover:grayscale-0 hover:opacity-20 transition-all duration-700" onError={(e) => { e.currentTarget.style.display = 'none' }} />
                   <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 to-transparent" />
                 </div>
                 <button onClick={() => setSelectedLead(null)} className="absolute top-4 right-4 p-2 bg-black/50 hover:bg-zinc-800 rounded-full text-white z-20 backdrop-blur-md transition-colors"><X size={16} /></button>
@@ -392,9 +549,7 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Data & Actions */}
               <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-8 bg-zinc-950">
-
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-zinc-900 border border-zinc-800 p-4 rounded-xl shadow-inner">
                     <p className="text-[9px] uppercase font-black tracking-[0.2em] text-zinc-500 mb-2">Valor Estimado</p>
@@ -412,7 +567,6 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* AI Generative Area */}
                 <div className="bg-[#111] rounded-2xl border border-white/5 p-5">
                   <h4 className="text-[11px] font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2 mb-4">
                     <BrainCircuit size={14} className="text-[#FFCC00]" /> Inteligencia Comercial
@@ -439,7 +593,7 @@ export default function Home() {
 
                   {msgSuccess && (
                     <div className="w-full py-4 bg-green-500/10 border border-green-500/30 text-green-400 rounded-lg flex items-center justify-center gap-2 text-xs font-bold">
-                      <CheckCircle2 size={16} /> Mensaje WhatsApp Enviado Exitosamente.
+                      <CheckCircle2 size={16} /> Mensaje WhatsApp Enviado.
                     </div>
                   )}
 
@@ -460,7 +614,6 @@ export default function Home() {
                   )}
                 </div>
 
-                {/* Timeline */}
                 <div>
                   <h4 className="text-[11px] font-black uppercase tracking-widest text-zinc-500 mb-4 border-b border-zinc-800 pb-2">Log de Acciones</h4>
                   <div className="space-y-4 font-mono text-xs">
@@ -468,19 +621,11 @@ export default function Home() {
                       <span className="text-zinc-600 shrink-0">{new Date(selectedLead.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                       <div>
                         <p className="text-zinc-300 font-bold">Receptor Inteligente</p>
-                        <p className="text-zinc-500">Contacto originado en WhatsApp, perfil creado.</p>
-                      </div>
-                    </div>
-                    <div className="flex gap-3">
-                      <span className="text-zinc-600 shrink-0">Auto</span>
-                      <div>
-                        <p className="text-[#FFCC00] font-bold">Asignación Distribuida</p>
-                        <p className="text-zinc-500">Responsable asignado: {selectedLead.assigned_agent || 'IA'}</p>
+                        <p className="text-zinc-500">Contacto detectado.</p>
                       </div>
                     </div>
                   </div>
                 </div>
-
               </div>
             </motion.aside>
           )}
@@ -491,24 +636,55 @@ export default function Home() {
 
   function PipelineView() {
     return (
-      <div className="flex-1 p-6 overflow-x-auto overflow-y-hidden flex gap-6 mt-4">
+      <div className="flex-1 p-6 overflow-x-auto overflow-y-hidden flex gap-6 mt-4 pb-12">
         {STAGES.map(stage => (
-          <div key={stage} className="w-80 min-w-80 shrink-0 flex flex-col h-full bg-zinc-900/30 border border-white/5 rounded-2xl relative">
+          <div
+            key={stage}
+            className="w-80 min-w-80 shrink-0 flex flex-col h-full bg-zinc-900/30 border border-white/5 rounded-2xl relative transition-all"
+            onDragOver={(e) => { e.preventDefault(); e.currentTarget.style.borderColor = '#FFCC00'; }}
+            onDragLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'; }}
+            onDrop={(e) => {
+              e.preventDefault();
+              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)';
+              const leadId = e.dataTransfer.getData('leadId');
+              if (leadId) updateLeadStage(Number(leadId), stage);
+            }}
+          >
             <div className="p-4 border-b border-white/5 flex justify-between items-center backdrop-blur-sm bg-black/50 rounded-t-2xl">
               <h3 className="text-sm font-black uppercase tracking-widest text-white">{stage}</h3>
               <span className="bg-[#E30613]/20 text-[#E30613] px-2 py-0.5 rounded text-[10px] font-bold">{leads.filter(l => l.stage === stage).length}</span>
             </div>
             <div className="flex-1 p-3 overflow-y-auto space-y-3 custom-scrollbar">
               {leads.filter(l => (l.stage || 'Nuevo') === stage).map(lead => (
-                <div key={lead.id} className="bg-zinc-950 border border-zinc-800 p-3 rounded-xl cursor-grab active:cursor-grabbing hover:border-zinc-600 shadow-sm">
+                <div
+                  key={lead.id}
+                  draggable
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData('leadId', lead.id.toString());
+                    e.currentTarget.style.opacity = '0.5';
+                  }}
+                  onDragEnd={(e) => {
+                    e.currentTarget.style.opacity = '1';
+                  }}
+                  className="bg-zinc-950 border border-zinc-800 p-4 rounded-xl cursor-grab active:cursor-grabbing hover:border-zinc-500 hover:shadow-[0_0_15px_rgba(255,255,255,0.05)] transition-all group"
+                >
                   <div className="flex justify-between items-start mb-2">
-                    <h4 className="text-sm font-bold text-white truncate max-w-[80%]">{lead.from_name}</h4>
-                    {lead.score > 80 && <Sparkles size={12} className="text-[#FFCC00]" />}
+                    <h4 className="text-sm font-bold text-white truncate max-w-[80%] group-hover:text-[#FFCC00] transition-colors">{lead.from_name}</h4>
+                    {lead.score > 80 && <Sparkles size={12} className="text-[#FFCC00] shrink-0" />}
                   </div>
-                  <p className="text-[10px] text-zinc-500 font-mono mb-2 truncate">{lead.phone}</p>
-                  <div className="flex items-center gap-2 mt-2 pt-2 border-t border-zinc-900">
-                    <div className="w-4 h-4 rounded bg-zinc-800 text-[8px] flex items-center justify-center font-bold text-white uppercase">{(lead.assigned_agent || 'I')[0]}</div>
-                    <span className="text-[9px] text-zinc-400 truncate">{lead.assigned_agent || 'Sin asignar'}</span>
+                  <p className="text-[10px] text-zinc-500 font-mono mb-3 truncate border-l-2 border-[#E30613] pl-2">
+                    {lead.body_preview || 'Sin descripción'}
+                  </p>
+                  <div className="flex items-center justify-between mt-2 pt-2 border-t border-zinc-900/80">
+                    <div className="flex items-center gap-2">
+                      <div className="w-5 h-5 rounded bg-zinc-800 text-[9px] flex items-center justify-center font-bold text-white uppercase border border-zinc-700">
+                        {(lead.assigned_agent || 'I')[0]}
+                      </div>
+                      <span className="text-[9px] font-bold text-zinc-400">{(lead.assigned_agent || 'IA').split(' ')[0]}</span>
+                    </div>
+                    <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-zinc-900 border ${lead.score > 80 ? 'text-emerald-400 border-emerald-900/50' : 'text-zinc-500 border-zinc-800'}`}>
+                      {lead.score} SC
+                    </span>
                   </div>
                 </div>
               ))}
@@ -538,7 +714,7 @@ export default function Home() {
           </div>
           <div className="bg-black border border-zinc-800 p-6 rounded-2xl relative flex flex-col justify-end min-h-[140px] overflow-hidden">
             <div className="absolute inset-0 opacity-40 mix-blend-luminosity">
-              <img src="/pollo2.jpg" alt="Planta" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none' }} />
+              <img src="/pollo3.jpg" alt="Planta" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none' }} />
             </div>
             <div className="relative z-10 bg-black/60 backdrop-blur-md p-3 -m-6 rounded-b-2xl border-t border-white/10">
               <p className="text-[10px] font-black uppercase tracking-widest text-white flex items-center gap-2"><MapPin size={12} className="text-[#E30613]" /> Planta Central Activa</p>
