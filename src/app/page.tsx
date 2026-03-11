@@ -50,7 +50,13 @@ export default function Home() {
   });
 
   const [logs, setLogs] = useState([
-    { time: "00:00", user: "SYS", action: "Iniciando Sistema", lead: "CLAVE_AI" }
+    { time: "00:00", user: "SYS", action: "Nodo CRM Iniciado", lead: "ALTEPSA_HQ" }
+  ]);
+
+  const [vendedores] = useState([
+    { id: 1, name: "Arkel Sales", color: "bg-blue-500", leads: 12, performance: 94 },
+    { id: 2, name: "Claudia Leads", color: "bg-purple-500", leads: 8, performance: 88 },
+    { id: 3, name: "Elite AI", color: "bg-[#E30613]", leads: 45, performance: 99 }
   ]);
 
   const fetchLeads = async () => {
@@ -92,17 +98,20 @@ export default function Home() {
       // Actualizar estado en Supabase
       await supabase
         .from('leads')
-        .update({ whatsapp_sent: true, action_status: 'Contactado' })
+        .update({
+          whatsapp_sent: true,
+          action_status: 'Contactado',
+          last_follow_up: new Date().toISOString()
+        })
         .eq('id', id);
 
       const newLog = {
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        user: "VENTAS",
-        action: "WhatsApp_Catalogo_Enviado",
+        user: "TEAM",
+        action: "FollowUp_Sent",
         lead: name.split(' ')[0]
       };
       setLogs(prev => [newLog, ...prev.slice(0, 3)]);
-      alert(`Catálogo solicitado para ${name} - Enviado con éxito`);
       fetchLeads();
     } catch (error) {
       console.error(error);
@@ -112,11 +121,40 @@ export default function Home() {
     }
   };
 
+  const handleAssignLead = async (leadId: number, vendedorName: string) => {
+    try {
+      setLoading(true);
+      await supabase
+        .from('leads')
+        .update({
+          assigned_to: vendedorName,
+          action_status: 'Asignado'
+        })
+        .eq('id', leadId);
+
+      const newLog = {
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        user: "CRM",
+        action: `Lead_Asignado_a_${vendedorName}`,
+        lead: "SYS"
+      };
+      setLogs(prev => [newLog, ...prev.slice(0, 3)]);
+      fetchLeads();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleCaptureLead = async () => {
     const demoNames = ["Juan Perez", "Maria Garcia", "Distribuidora San Juan", "Pollos El Granjero", "Restaurante La Parilla"];
     const products = ["Pollo en Canal", "Pechuga Deshuesada", "Alas Adobadas", "Piel de Pollo"];
     const name = demoNames[Math.floor(Math.random() * demoNames.length)];
     const product = products[Math.floor(Math.random() * products.length)];
+
+    // Auto-asignación simple para la demo (Round Robin)
+    const assignedTo = vendedores[leads.length % vendedores.length].name;
 
     const { error } = await supabase.from('leads').insert([{
       from_name: name,
@@ -124,7 +162,9 @@ export default function Home() {
       source: 'Dashboard_Manual',
       score: Math.floor(Math.random() * 40) + 60,
       stage: 'MQL',
-      action_status: 'Nuevo',
+      action_status: 'Asignado',
+      assigned_to: assignedTo,
+      priority: Math.random() > 0.7 ? 'Alta' : 'Media',
       body_preview: `Busco información sobre ${product}`
     }]);
 
@@ -220,9 +260,19 @@ export default function Home() {
           </div>
 
           <nav className="hidden lg:flex items-center gap-10 px-10 border-x border-gray-100/50 h-10">
-            <button className="text-[#E30613] font-black text-[11px] uppercase tracking-[0.2em] border-b-2 border-[#E30613] pb-1 transition-all">Inteligencia</button>
+            <button
+              onClick={() => setActiveTab("leads")}
+              className={`${activeTab === "leads" ? 'text-[#E30613] border-[#E30613]' : 'text-gray-400'} font-black text-[11px] uppercase tracking-[0.2em] border-b-2 pb-1 transition-all`}
+            >
+              Inteligencia
+            </button>
+            <button
+              onClick={() => setActiveTab("crm")}
+              className={`${activeTab === "crm" ? 'text-[#E30613] border-[#E30613]' : 'text-gray-400'} font-black text-[11px] uppercase tracking-[0.2em] border-b-2 pb-1 transition-all`}
+            >
+              CRM & Seguimiento
+            </button>
             <button className="text-gray-400 hover:text-[#1A1A1A] font-black text-[11px] uppercase tracking-[0.2em] transition-all">Logística</button>
-            <button className="text-gray-400 hover:text-[#1A1A1A] font-black text-[11px] uppercase tracking-[0.2em] transition-all">Distribución</button>
           </nav>
 
           <div className="flex items-center gap-5">
@@ -297,43 +347,60 @@ export default function Home() {
           <section className="grid grid-cols-1 lg:grid-cols-12 gap-12">
             {/* Sales Pipeline */}
             <div className="lg:col-span-8 space-y-8">
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-6 px-4">
-                <h3 className="text-3xl font-black tracking-tight flex items-center gap-4">
-                  <div className="p-2 bg-[#E30613] rounded-xl shadow-lg shadow-red-500/10">
-                    <Package size={24} className="text-white" />
-                  </div>
-                  Pipeline de Ventas
-                </h3>
-                <div className="flex p-1.5 bg-gray-100/50 backdrop-blur-lg rounded-2xl border border-gray-200/50">
-                  {["All", "MQL", "SQL"].map(f => (
-                    <button
-                      key={f}
-                      onClick={() => setFilterStatus(f)}
-                      className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${filterStatus === f ? 'bg-white text-[#E30613] shadow-md' : 'text-gray-400 hover:text-gray-600'}`}
-                    >
-                      {f}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="grid gap-5">
-                {loading ? (
-                  <div className="h-96 flex flex-col items-center justify-center bg-white/40 backdrop-blur-xl rounded-[40px] border border-white/50 shadow-inner">
-                    <div className="relative">
-                      <div className="absolute inset-0 bg-[#E30613]/20 blur-xl rounded-full animate-pulse" />
-                      <Loader2 className="animate-spin text-[#E30613] relative z-10" size={48} />
+              {activeTab === "leads" ? (
+                <>
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-6 px-4">
+                    <h3 className="text-3xl font-black tracking-tight flex items-center gap-4">
+                      <div className="p-2 bg-[#E30613] rounded-xl shadow-lg shadow-red-500/10">
+                        <Package size={24} className="text-white" />
+                      </div>
+                      Pipeline de Ventas
+                    </h3>
+                    <div className="flex p-1.5 bg-gray-100/50 backdrop-blur-lg rounded-2xl border border-gray-200/50">
+                      {["All", "MQL", "SQL"].map(f => (
+                        <button
+                          key={f}
+                          onClick={() => setFilterStatus(f)}
+                          className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${filterStatus === f ? 'bg-white text-[#E30613] shadow-md' : 'text-gray-400 hover:text-gray-600'}`}
+                        >
+                          {f}
+                        </button>
+                      ))}
                     </div>
-                    <p className="text-[11px] font-black uppercase tracking-[0.4em] text-[#E30613] mt-8 animate-pulse">Sincronizando Nodo Logístico...</p>
                   </div>
-                ) : (
-                  leads
-                    .filter(lead => lead && (filterStatus === "All" || lead.stage === filterStatus || lead.type === filterStatus))
-                    .map(lead => (
-                      <LeadCardItem key={lead.id} lead={lead} onSend={() => handleWhatsAppQuickSend(lead.phone || '', lead.from_name || 'Prospecto', lead.id)} />
-                    ))
-                )}
-              </div>
+
+                  <div className="grid gap-5">
+                    {loading ? (
+                      <div className="h-96 flex flex-col items-center justify-center bg-white/40 backdrop-blur-xl rounded-[40px] border border-white/50 shadow-inner">
+                        <div className="relative">
+                          <div className="absolute inset-0 bg-[#E30613]/20 blur-xl rounded-full animate-pulse" />
+                          <Loader2 className="animate-spin text-[#E30613] relative z-10" size={48} />
+                        </div>
+                        <p className="text-[11px] font-black uppercase tracking-[0.4em] text-[#E30613] mt-8 animate-pulse">Sincronizando Nodo Logístico...</p>
+                      </div>
+                    ) : (
+                      leads
+                        .filter(lead => lead && (filterStatus === "All" || lead.stage === filterStatus || lead.type === filterStatus))
+                        .map(lead => (
+                          <LeadCardItem
+                            key={lead.id}
+                            lead={lead}
+                            vendedores={vendedores}
+                            onAssign={handleAssignLead}
+                            onSend={() => handleWhatsAppQuickSend(lead.phone || '', lead.from_name || 'Prospecto', lead.id)}
+                          />
+                        ))
+                    )}
+                  </div>
+                </>
+              ) : (
+                <CRMView
+                  leads={leads}
+                  vendedores={vendedores}
+                  onAssign={handleAssignLead}
+                  onSend={handleWhatsAppQuickSend}
+                />
+              )}
             </div>
 
             {/* AI Control Center */}
@@ -388,6 +455,86 @@ export default function Home() {
   );
 }
 
+function CRMView({ leads, vendedores, onAssign, onSend }: any) {
+  return (
+    <div className="space-y-10">
+      <div className="flex items-center justify-between px-4">
+        <h3 className="text-3xl font-black tracking-tight flex items-center gap-4 uppercase">
+          <Users className="text-[#E30613]" /> Equipo de Ventas
+        </h3>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {vendedores.map((v: any) => (
+          <div key={v.id} className="bg-white/70 backdrop-blur-xl p-8 rounded-[32px] border border-gray-100 shadow-xl shadow-gray-200/40 group hover:-translate-y-2 transition-all">
+            <div className="flex justify-between items-start mb-6">
+              <div className={`w-12 h-12 rounded-2xl ${v.color} flex items-center justify-center text-white font-black text-xl shadow-lg`}>
+                {v.name.charAt(0)}
+              </div>
+              <div className="text-right">
+                <div className="text-2xl font-black text-gray-900">{v.leads}</div>
+                <div className="text-[9px] font-black text-gray-400 uppercase tracking-widest uppercase">Asignaciones</div>
+              </div>
+            </div>
+            <h5 className="font-black text-gray-900 uppercase tracking-tighter mb-1">{v.name}</h5>
+            <div className="flex items-center gap-2 mb-6">
+              <div className="flex-1 h-1 bg-gray-100 rounded-full overflow-hidden">
+                <div className="h-full bg-green-500" style={{ width: `${v.performance}%` }} />
+              </div>
+              <span className="text-[10px] font-black text-green-600">{v.performance}%</span>
+            </div>
+            <button className="w-full py-3 bg-gray-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-[#E30613] transition-colors shadow-lg shadow-gray-900/10">
+              Ver Reporte
+            </button>
+          </div>
+        ))}
+      </div>
+
+      <div className="space-y-6">
+        <h3 className="text-2xl font-black tracking-tight px-4 uppercase">Control de Seguimiento_ HQ</h3>
+        <div className="grid gap-4">
+          {leads.slice(0, 10).map((lead: any) => (
+            <div key={lead.id} className="bg-white/80 backdrop-blur-md p-6 rounded-3xl border border-gray-100 flex items-center gap-6 group hover:shadow-2xl transition-all">
+              <div className="w-12 h-12 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 font-bold group-hover:bg-[#E30613]/5 group-hover:text-[#E30613] transition-all">
+                {lead.from_name?.charAt(0)}
+              </div>
+              <div className="flex-1">
+                <h6 className="font-black text-gray-800 uppercase tracking-tighter">{lead.from_name}</h6>
+                <p className="text-[10px] text-gray-400 font-bold flex items-center gap-2">
+                  Último contacto: {lead.last_follow_up ? new Date(lead.last_follow_up).toLocaleDateString() : 'Pendiente'}
+                </p>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="text-right">
+                  <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Responsable</div>
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={lead.assigned_to || ""}
+                      onChange={(e) => onAssign(lead.id, e.target.value)}
+                      className="text-[10px] font-black uppercase bg-gray-100 border-none rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-[#E30613] appearance-none cursor-pointer"
+                    >
+                      <option value="">Sin Asignar</option>
+                      {vendedores.map((v: any) => (
+                        <option key={v.id} value={v.name}>{v.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <button
+                  onClick={() => onSend(lead.phone, lead.from_name, lead.id)}
+                  className="p-3 bg-gray-900 text-white rounded-xl hover:bg-[#E30613] transition-all active:scale-90"
+                >
+                  <RefreshCw size={16} />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function MetricCard({ label, value, icon, sub, isHighlight }: any) {
   return (
     <div className={`p-10 rounded-[40px] transition-all border group relative overflow-hidden ${isHighlight ? 'bg-white border-[#E30613]/30 shadow-2xl shadow-red-500/10' : 'bg-white/60 backdrop-blur-xl border-white/50 shadow-xl shadow-gray-200/50'
@@ -406,7 +553,7 @@ function MetricCard({ label, value, icon, sub, isHighlight }: any) {
   );
 }
 
-function LeadCardItem({ lead, onSend }: any) {
+function LeadCardItem({ lead, onSend, vendedores, onAssign }: any) {
   if (!lead) return null;
   const isBotActive = lead.action_status?.includes('IA');
   const name = lead.from_name || "Sin nombre";
@@ -423,6 +570,12 @@ function LeadCardItem({ lead, onSend }: any) {
       {isBotActive && (
         <div className="absolute top-0 right-0 w-32 h-32 bg-red-50 -mr-16 -mt-16 rounded-full blur-2xl opacity-50" />
       )}
+
+      <div className="absolute top-4 right-4 flex gap-2 z-20">
+        {lead.priority === 'Alta' && (
+          <span className="bg-red-600 text-white text-[8px] font-black uppercase px-3 py-1 rounded-full shadow-lg shadow-red-500/30 tracking-widest">Prioridad_Alta</span>
+        )}
+      </div>
 
       <div className={`w-20 h-20 rounded-3xl flex items-center justify-center font-black text-2xl shadow-2xl transition-all duration-700 relative z-10 ${isBotActive ? 'bg-gradient-to-br from-[#E30613] to-[#c40510] text-white -rotate-6 scale-110 shadow-red-500/30' : 'bg-gray-100 text-gray-400 group-hover:bg-white group-hover:text-[#E30613] border border-transparent group-hover:border-gray-100'
         }`}>
@@ -442,11 +595,24 @@ function LeadCardItem({ lead, onSend }: any) {
             )}
           </div>
         </div>
-        <div className="flex items-center justify-center md:justify-start gap-4 mb-3">
+        <div className="flex flex-wrap items-center justify-center md:justify-start gap-6 mb-3">
           <p className="text-[11px] text-gray-400 font-bold flex items-center gap-2">
             <Smartphone size={14} className="text-[#E30613]" /> {lead.phone || 'Sin contacto'}
           </p>
-          <div className="w-1 h-1 bg-gray-300 rounded-full" />
+          <div className="flex items-center gap-2 bg-gray-50 px-3 py-1 rounded-lg border border-gray-100">
+            <User size={12} className="text-gray-400" />
+            <span className="text-[10px] font-black text-gray-600 uppercase tracking-tighter">
+              {lead.assigned_to || (
+                <select
+                  className="bg-transparent border-none p-0 text-[10px] focus:ring-0 appearance-none cursor-pointer"
+                  onChange={(e) => onAssign(lead.id, e.target.value)}
+                >
+                  <option>Asignar...</option>
+                  {vendedores.map((v: any) => <option key={v.id} value={v.name}>{v.name}</option>)}
+                </select>
+              )}
+            </span>
+          </div>
           <p className="text-[11px] text-[#FFCC00] font-black uppercase tracking-widest">
             Score: {lead.score || 0}%
           </p>
@@ -461,7 +627,10 @@ function LeadCardItem({ lead, onSend }: any) {
           onClick={onSend}
           className="w-16 h-16 bg-[#25D366] hover:bg-[#128C7E] text-white rounded-2xl shadow-xl shadow-green-500/30 transition-all active:scale-90 flex items-center justify-center group/btn"
         >
-          <Send size={24} className="group-hover/btn:translate-x-1 group-hover/btn:-translate-y-1 transition-transform" />
+          <div className="flex flex-col items-center gap-0.5">
+            <Send size={24} className="group-hover/btn:translate-x-1 group-hover/btn:-translate-y-1 transition-transform" />
+            <span className="text-[7px] font-black uppercase">Seguimiento</span>
+          </div>
         </button>
         <div className="w-12 h-16 flex items-center justify-center text-gray-300 hover:text-[#E30613] cursor-pointer transition-colors bg-gray-50 rounded-2xl border border-gray-100">
           <ChevronRight size={24} />
