@@ -90,7 +90,7 @@ export default function Home() {
       const gReq = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: newMsgs.map(m => ({ role: m.role, content: m.text })), leadName: simName }),
+        body: JSON.stringify({ messages: newMsgs.map(m => ({ role: m.role === 'ai' ? 'assistant' : m.role, content: m.text })), leadName: simName }),
       });
       const gRes = await gReq.json();
       setChatAiThinking(false);
