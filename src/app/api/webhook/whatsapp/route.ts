@@ -13,7 +13,7 @@ export async function POST(req: Request) {
         const data = body.data;
 
         if (event === 'messages.upsert') {
-            // Extraer key de forma robusta (Evolution API v1 y v2 envían en sitios distintos)
+            // Extraer key de forma robusta (Evolution API v1 y v2)
             const key = data?.key || data?.message?.key;
             if (!key) {
                 console.log('No se encontró key en el payload, ignorando.');
@@ -25,12 +25,10 @@ export async function POST(req: Request) {
             if (!fromMe) {
                 const phone = key.remoteJid?.split('@')[0];
                 if (!phone) {
-                    console.log('No se pudo extraer teléfono.');
                     return NextResponse.json({ status: 'ignored', reason: 'no_phone' });
                 }
 
                 const pushName = data.pushName || 'Prospecto';
-                // Extraer contenido del mensaje de múltiples posibles campos
                 const content = data.message?.conversation
                     || data.message?.extendedTextMessage?.text
                     || data.message?.imageMessage?.caption
@@ -38,16 +36,18 @@ export async function POST(req: Request) {
 
                 console.log(`📩 Mensaje de: ${pushName} (${phone}): ${content}`);
 
-                // ═══════════════════════════════════════
-                // PASO 1: Generar respuesta IA (Llama 3.3)
-                // ═══════════════════════════════════════
+                // ═══ PASO 1: Generar respuesta IA ═══
                 console.log('🤖 Generando respuesta IA...');
-                const aiResponse = await aiService.generateResponse(pushName, content);
-                console.log('✅ Respuesta IA generada:', aiResponse.substring(0, 80) + '...');
+                let aiResponse = '';
+                try {
+                    aiResponse = await aiService.generateResponse(pushName, content);
+                    console.log('✅ IA respondió:', aiResponse.substring(0, 80) + '...');
+                } catch (aiErr: any) {
+                    console.error('⚠️ Error IA, usando fallback:', aiErr.message);
+                    aiResponse = `¡Hola ${pushName}! Gracias por tu interés en ALTEPSA. Un asesor te contactará en breve para atenderte.`;
+                }
 
-                // ═══════════════════════════════════════
-                // PASO 2: CRM - Guardar/Actualizar Lead
-                // ═══════════════════════════════════════
+                // ═══ PASO 2: CRM - Guardar Lead ═══
                 const { data: existingLead } = await supabase
                     .from('leads')
                     .select('*')
@@ -55,14 +55,14 @@ export async function POST(req: Request) {
                     .single();
 
                 if (!existingLead) {
-                    // Asignación automática (Round Robin)
+                    // Asignación automática Round Robin
                     const vendedores = ["Arkel Sales", "Claudia Leads", "Elite AI"];
                     const { count } = await supabase.from('leads').select('*', { count: 'exact', head: true });
                     const assignedTo = vendedores[(count || 0) % vendedores.length];
-
                     console.log(`👤 NUEVO LEAD: ${pushName} → Asignado a: ${assignedTo}`);
 
-                    await supabase
+                    // Insert básico (campos que seguro existen)
+                    const { error: insertErr } = await supabase
                         .from('leads')
                         .insert([{
                             from_name: pushName,
@@ -71,31 +71,42 @@ export async function POST(req: Request) {
                             body_preview: content,
                             score: 85,
                             stage: 'MQL',
-                            action_status: 'IA_Respondiendo',
-                            assigned_to: assignedTo,
-                            priority: 'Media',
-                            last_follow_up: new Date().toISOString()
+                            action_status: 'IA_Respondiendo'
                         }]);
 
-                    console.log('💾 Lead guardado en Supabase con éxito');
+                    if (insertErr) {
+                        console.error('⚠️ Error insertando lead:', insertErr.message);
+                    } else {
+                        console.log('💾 Lead guardado en Supabase');
+                        // Intentar agregar campos CRM (pueden no existir aún)
+                        try {
+                            await supabase
+                                .from('leads')
+                                .update({ assigned_to: assignedTo, priority: 'Media', last_follow_up: new Date().toISOString() })
+                                .eq('phone', phone);
+                            console.log('📋 Campos CRM asignados');
+                        } catch { console.log('ℹ️ Campos CRM opcionales no disponibles'); }
+                    }
                 } else {
-                    console.log(`🔄 Lead existente actualizado: ${pushName}`);
+                    console.log(`🔄 Lead existente: ${pushName}`);
                     await supabase
                         .from('leads')
                         .update({
                             body_preview: content,
-                            action_status: 'Conversación_IA',
-                            last_follow_up: new Date().toISOString()
+                            action_status: 'Conversación_IA'
                         })
                         .eq('phone', phone);
                 }
 
-                // ═══════════════════════════════════════
-                // PASO 3: Enviar respuesta por WhatsApp
-                // ═══════════════════════════════════════
-                console.log('📱 Enviando respuesta por WhatsApp...');
-                await evolutionApi.sendMessage(phone, aiResponse);
-                console.log('✅ Respuesta enviada con éxito al prospecto');
+                // ═══ PASO 3: Enviar respuesta WhatsApp ═══
+                console.log('📱 Enviando respuesta vía Evolution API...');
+                try {
+                    await evolutionApi.sendMessage(phone, aiResponse);
+                    console.log('✅ Respuesta enviada al prospecto');
+                } catch (sendErr: any) {
+                    console.error('⚠️ Error enviando WhatsApp:', sendErr.message);
+                    // No lanzar error - el lead ya se guardó
+                }
             }
         }
 
