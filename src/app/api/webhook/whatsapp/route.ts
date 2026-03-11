@@ -34,24 +34,34 @@ export async function POST(req: Request) {
                     .single();
 
                 if (!existingLead) {
-                    console.log('Creando nuevo lead con cerebro de IA...');
+                    // Lógica de Asignación Automática (Demo)
+                    const vendedores = ["Arkel Sales", "Claudia Leads", "Elite AI"];
+                    const { count } = await supabase.from('leads').select('*', { count: 'exact', head: true });
+                    const assignedTo = vendedores[(count || 0) % vendedores.length];
+
+                    console.log(`Nuevo lead: ${pushName}. Asignando a: ${assignedTo}`);
+
                     await supabase
                         .from('leads')
                         .insert([{
                             from_name: pushName,
                             phone: phone,
-                            source: 'WhatsApp_Live',
+                            source: 'WhatsApp_AI',
                             body_preview: content,
                             score: 85,
                             stage: 'MQL',
-                            action_status: 'IA_Respondiendo'
+                            action_status: 'IA_Respondiendo',
+                            assigned_to: assignedTo,
+                            priority: 'Media',
+                            last_follow_up: new Date().toISOString()
                         }]);
                 } else {
                     await supabase
                         .from('leads')
                         .update({
                             body_preview: content,
-                            action_status: 'Conversación_IA'
+                            action_status: 'Conversación_IA',
+                            last_follow_up: new Date().toISOString()
                         })
                         .eq('phone', phone);
                 }
