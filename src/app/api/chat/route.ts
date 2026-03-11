@@ -37,6 +37,10 @@ export async function POST(req: Request) {
 
     } catch (error: any) {
         console.error("OpenAI Chat Error:", error);
-        return NextResponse.json({ success: false, error: 'Internal Server Error' }, { status: 500 });
+        return NextResponse.json({
+            success: false,
+            error: error.message || 'Internal Server Error',
+            text: `Error de API: ${error.message || 'Error Desconocido'}`
+        });
     }
 }
