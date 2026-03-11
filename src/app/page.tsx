@@ -118,7 +118,7 @@ export default function Home() {
     // Get last user message as body preview
     const bodyPreview = chatMsgs.filter(m => m.role === 'user').pop()?.text || "Chat simulado sin mensajes del usuario.";
 
-    const { error } = await supabase.from('leads').insert([{
+    const { error } = await supabase.from('leads').upsert([{
       from_address: `sim_${Date.now()}@altepsa.com`,
       from_name: simName,
       phone: simPhone,
@@ -128,7 +128,7 @@ export default function Home() {
       action_status: 'IA_Conversando',
       assigned_agent: assignedAgent,
       body_preview: bodyPreview
-    }]);
+    }], { onConflict: 'phone' });
 
     if (!error) {
       setShowSimulateModal(false);
