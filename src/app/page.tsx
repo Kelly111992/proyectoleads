@@ -546,41 +546,70 @@ export default function Home() {
                 </div>
                 <button onClick={() => setSelectedLead(null)} className="absolute top-4 right-4 p-2 bg-black/50 hover:bg-zinc-800 rounded-full text-white z-20 backdrop-blur-md transition-colors"><X size={16} /></button>
 
-                <div className="relative z-10 flex items-end gap-4 mt-auto">
-                  <div className="w-16 h-16 rounded-xl bg-[#E30613] text-white flex items-center justify-center text-2xl font-black shadow-lg shadow-red-900/40 uppercase">
+                <div className="relative z-10 flex items-end gap-5 mt-auto">
+                  <div className="w-20 h-20 rounded-2xl bg-[#E30613] text-white flex items-center justify-center text-3xl font-black shadow-2xl shadow-red-900/60 uppercase border-2 border-white/10 transform -rotate-3 transition-transform hover:rotate-0">
                     {(selectedLead.from_name || 'S')[0]}
                   </div>
-                  <div>
-                    <h2 className="text-2xl font-black text-white leading-none uppercase tracking-tighter mb-1">{selectedLead.from_name}</h2>
-                    <span className="text-xs text-zinc-400 font-mono">{selectedLead.phone}</span>
+                  <div className="pb-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h2 className="text-3xl font-black text-white leading-none uppercase tracking-tighter">{selectedLead.from_name}</h2>
+                      <div className="px-2 py-0.5 bg-emerald-500/20 border border-emerald-500/30 rounded text-[9px] font-black text-emerald-400">CONTACTO ACTIVO</div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs text-zinc-400 font-mono flex items-center gap-1.5"><Phone size={12} className="text-[#FFCC00]" /> {selectedLead.phone}</span>
+                      <span className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest bg-white/5 px-2 py-0.5 rounded">ID: {selectedLead.id.toString().padStart(4, '0')}</span>
+                    </div>
                   </div>
                 </div>
               </div>
 
               <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-8 bg-zinc-950">
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-zinc-900 border border-zinc-800 p-4 rounded-xl shadow-inner">
-                    <p className="text-[9px] uppercase font-black tracking-[0.2em] text-zinc-500 mb-2">Valor Estimado</p>
-                    <span className="text-xl font-black text-[#FFCC00] font-mono">{selectedLead.score > 80 ? '$45k' : '$12k'} MXN</span>
+                  <div className="bg-zinc-900 border border-zinc-800 p-5 rounded-2xl shadow-inner relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 p-2 opacity-5 -mr-2 -mt-2 group-hover:opacity-10 transition-opacity"><TrendingUp size={48} /></div>
+                    <p className="text-[9px] uppercase font-black tracking-[0.2em] text-[#FFCC00] mb-2">Valor Estimado</p>
+                    <span className="text-2xl font-black text-white font-mono">{selectedLead.score > 80 ? '$45,200' : '$12,850'} <span className="text-xs text-zinc-500">MXN</span></span>
                   </div>
-                  <div className="bg-zinc-900 border border-zinc-800 p-4 rounded-xl flex flex-col justify-center">
-                    <p className="text-[9px] uppercase font-black tracking-[0.2em] text-zinc-500 mb-2">Estado</p>
+                  <div className="bg-zinc-900 border border-zinc-800 p-5 rounded-2xl flex flex-col justify-center relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 p-2 opacity-5 -mr-2 -mt-2 group-hover:opacity-10 transition-opacity"><Target size={48} /></div>
+                    <p className="text-[9px] uppercase font-black tracking-[0.2em] text-[#E30613] mb-2">Etapa del Trato</p>
                     <select
                       value={selectedLead.stage || 'Nuevo'}
                       onChange={(e) => updateLeadStage(selectedLead.id, e.target.value)}
-                      className="bg-zinc-950 border border-zinc-800 text-sm font-bold text-white px-2 py-1 rounded select-none outline-none focus:border-[#E30613]"
+                      className="bg-black border border-zinc-800 text-sm font-black text-white px-2 py-2 rounded-xl select-none outline-none focus:border-[#E30613] cursor-pointer appearance-none text-center"
                     >
-                      {STAGES.map(s => <option key={s} value={s}>{s}</option>)}
+                      {STAGES.map(s => <option key={s} value={s}>{s.toUpperCase()}</option>)}
                     </select>
                   </div>
                 </div>
 
-                <div className="bg-[#111] rounded-2xl border border-white/5 p-5">
-                  <h4 className="text-[11px] font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2 mb-4">
-                    <BrainCircuit size={14} className="text-[#FFCC00]" /> Inteligencia Comercial
+                <div className="space-y-4">
+                  <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 mb-4 px-1">Propiedades del Contacto</h4>
+                  <div className="bg-zinc-900/30 border border-zinc-800/50 rounded-2xl p-4 space-y-4">
+                    <div className="flex justify-between items-center border-b border-zinc-800 pb-3">
+                      <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Fuente Original</span>
+                      <span className="text-xs text-white font-black bg-white/5 px-2 py-1 rounded">WHATSAPP CLOUD</span>
+                    </div>
+                    <div className="flex justify-between items-center border-b border-zinc-800 pb-3">
+                      <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Propietario</span>
+                      <span className="text-xs text-[#FFCC00] font-black">{selectedLead.assigned_agent || 'Sin Asignar'}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Calificación</span>
+                      <div className="flex items-center gap-1">
+                        {[1, 2, 3, 4, 5].map(i => <Sparkles key={i} size={10} className={i <= (selectedLead.score / 20) ? 'text-[#FFCC00]' : 'text-zinc-800'} />)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-black/40 rounded-3xl border border-white/5 p-6 shadow-2xl relative overflow-hidden">
+                  <div className="absolute top-0 right-0 p-4 opacity-5"><Zap size={40} className="text-[#FFCC00]" /></div>
+                  <h4 className="text-[11px] font-black uppercase tracking-widest text-[#FFCC00] flex items-center gap-2 mb-5">
+                    <BrainCircuit size={16} className="animate-pulse" /> Resumen Estratégico AI
                   </h4>
 
-                  <div className="bg-zinc-950 border border-zinc-800 rounded-lg p-3 mb-4">
+                  <div className="bg-zinc-950 border border-zinc-800/80 rounded-2xl p-4 mb-5 shadow-inner">
                     <p className="text-xs text-zinc-300 italic font-medium leading-relaxed">
                       "{selectedLead.body_preview}"
                     </p>
