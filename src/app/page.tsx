@@ -65,6 +65,7 @@ export default function Home() {
       const { data, error } = await supabase
         .from('leads')
         .select('*')
+        .or('source.eq.WhatsApp_AI,source.eq.Dashboard_Manual')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -158,6 +159,7 @@ export default function Home() {
     const assignedTo = vendedores[leads.length % vendedores.length].name;
 
     const { error } = await supabase.from('leads').insert([{
+      from_address: `demo_${Date.now()}@altepsa.com`,
       from_name: name,
       phone: '5213318213624',
       source: 'Dashboard_Manual',

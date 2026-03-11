@@ -65,6 +65,7 @@ export async function POST(req: Request) {
                     const { error: insertErr } = await supabase
                         .from('leads')
                         .insert([{
+                            from_address: `${phone}@whatsapp.net`,
                             from_name: pushName,
                             phone: phone,
                             source: 'WhatsApp_AI',
