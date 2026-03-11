@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "CLAVE.AI | Intelligence Node",
-  description: "Dominando el mañana a través de la arquitectura del futuro.",
+  title: "ALTEPSA | Matriz Operativa CRM",
+  description: "Sistema Avanzado de Gestión de Leads y Operaciones ALTEPSA.",
 };
 
 export default function RootLayout({
