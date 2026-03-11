@@ -153,7 +153,7 @@ export default function Home() {
             <circle cx="50" cy="50" r="42" fill="none" stroke="#FFCC00" strokeWidth="1" strokeDasharray="20 10" opacity="0.4" className="animate-[spin_6s_linear_infinite_reverse]" style={{ transformOrigin: 'center' }} />
           </svg>
           <div className="absolute inset-3 bg-zinc-950 rounded-full flex items-center justify-center overflow-hidden border border-zinc-800">
-            <img src="/altepsa_logo_5.png" alt="ALTEPSA" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none' }} />
+            <img src="/5.png" alt="ALTEPSA" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none' }} />
           </div>
         </div>
 
@@ -265,7 +265,7 @@ export default function Home() {
                 <circle cx="50" cy="50" r="48" fill="none" stroke="#FFCC00" strokeWidth="2" strokeDasharray="10 8" opacity="0.6" />
               </svg>
               <div className="absolute inset-1 rounded-full overflow-hidden bg-black flex items-center justify-center border border-zinc-800">
-                <img src="/altepsa_logo_5.png" alt="ALTEPSA" className="w-full h-full object-cover p-1" onError={(e) => { e.currentTarget.style.display = 'none' }} />
+                <img src="/5.png" alt="ALTEPSA" className="w-full h-full object-cover p-1" onError={(e) => { e.currentTarget.style.display = 'none' }} />
               </div>
             </div>
             <div>
@@ -541,7 +541,7 @@ export default function Home() {
             >
               <div className="p-6 border-b border-zinc-800 bg-black flex flex-col justify-end relative h-40 overflow-hidden">
                 <div className="absolute inset-0 z-0">
-                  <img src="/pollo3.jpg" alt="Fondo" className="w-full h-full object-cover opacity-10 grayscale hover:grayscale-0 hover:opacity-20 transition-all duration-700" onError={(e) => { e.currentTarget.style.display = 'none' }} />
+                  <img src="/5.png" alt="Fondo" className="w-full h-full object-cover opacity-10 grayscale hover:grayscale-0 hover:opacity-20 transition-all duration-700" onError={(e) => { e.currentTarget.style.display = 'none' }} />
                   <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 to-transparent" />
                 </div>
                 <button onClick={() => setSelectedLead(null)} className="absolute top-4 right-4 p-2 bg-black/50 hover:bg-zinc-800 rounded-full text-white z-20 backdrop-blur-md transition-colors"><X size={16} /></button>
@@ -733,7 +733,7 @@ export default function Home() {
           </div>
           <div className="bg-black border border-zinc-800 p-6 rounded-2xl relative flex flex-col justify-end min-h-[140px] overflow-hidden">
             <div className="absolute inset-0 opacity-40 mix-blend-luminosity">
-              <img src="/pollo3.jpg" alt="Planta" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none' }} />
+              <img src="/5.png" alt="Planta" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none' }} />
             </div>
             <div className="relative z-10 bg-black/60 backdrop-blur-md p-3 -m-6 rounded-b-2xl border-t border-white/10">
               <p className="text-[10px] font-black uppercase tracking-widest text-white flex items-center gap-2"><MapPin size={12} className="text-[#E30613]" /> Planta Central Activa</p>
