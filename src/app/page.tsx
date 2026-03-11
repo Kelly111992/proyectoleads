@@ -2,14 +2,13 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Users, Target, TrendingUp, MessageSquare, Zap, ChevronRight, Plus,
-  Search, LayoutDashboard, Clock, Activity, AlertCircle, Phone, Mail,
-  Calendar, Inbox, Command, Sparkles, Send, MoreVertical, X, CheckCircle2,
-  FileText, ArrowRight, BrainCircuit, BarChart2, ShieldCheck, HelpCircle,
-  Play, Bot, PlayCircle, Filter
+  Users, Target, TrendingUp, MessageSquare, Zap, Plus,
+  Search, Clock, Activity, AlertCircle, Phone,
+  Command, Sparkles, Send, X, CheckCircle2,
+  FileText, BrainCircuit, BarChart2, ShieldCheck,
+  PlayCircle, MapPin, Gauge, PackageSearch
 } from "lucide-react";
 import { useState, useEffect } from "react";
-import { evolutionApi } from "@/lib/evolution";
 import { supabase } from "@/lib/supabase";
 
 const STAGES = ["Nuevo", "Contactado", "Cotizando", "Negociación", "Cierre"];
@@ -22,14 +21,22 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
 
+  // Modals
+  const [showSimulateModal, setShowSimulateModal] = useState(false);
+  const [simName, setSimName] = useState("");
+  const [simPhone, setSimPhone] = useState("");
+  const [simMsg, setSimMsg] = useState("");
+
   // AI Reply State
   const [aiGenerating, setAiGenerating] = useState(false);
   const [aiSuggestion, setAiSuggestion] = useState("");
+  const [sendingMsg, setSendingMsg] = useState(false);
+  const [msgSuccess, setMsgSuccess] = useState(false);
 
   const [agents] = useState([
-    { id: 1, name: "Arkel Sales", color: "text-blue-400", bg: "bg-blue-400/10", border: "border-blue-400/20", capacity: 85, active: 12, lastSeen: "Hace 2 min", avatar: "AS" },
-    { id: 2, name: "Claudia Leads", color: "text-purple-400", bg: "bg-purple-400/10", border: "border-purple-400/20", capacity: 70, active: 8, lastSeen: "Online", avatar: "CL" },
-    { id: 3, name: "Elite AI", color: "text-emerald-400", bg: "bg-emerald-400/10", border: "border-emerald-400/20", capacity: 100, active: 45, lastSeen: "Siempre 24/7", avatar: "AI" }
+    { id: 1, name: "Arkel Sales", color: "text-[#E30613]", bg: "bg-[#E30613]/10", border: "border-[#E30613]/20", capacity: 85, active: 12, lastSeen: "Hace 2 min", avatar: "AS", sales: "$125,000", conversion: "32%" },
+    { id: 2, name: "Claudia Leads", color: "text-[#FFCC00]", bg: "bg-[#FFCC00]/10", border: "border-[#FFCC00]/20", capacity: 70, active: 8, lastSeen: "Online", avatar: "CL", sales: "$98,500", conversion: "28%" },
+    { id: 3, name: "IA de Ventas", color: "text-zinc-300", bg: "bg-zinc-300/10", border: "border-zinc-300/20", capacity: 100, active: 45, lastSeen: "Siempre 24/7", avatar: "AI", sales: "$450,000", conversion: "68%" }
   ]);
 
   const fetchLeads = async () => {
@@ -52,39 +59,69 @@ export default function Home() {
 
   const updateLeadStage = async (id: number, newStage: string) => {
     setLeads(prev => prev.map(l => l.id === id ? { ...l, stage: newStage } : l));
-    const { error } = await supabase.from('leads').update({ stage: newStage, action_status: 'Actualizado' }).eq('id', id);
+    const { error } = await supabase.from('leads').update({ stage: newStage, action_status: 'Etapa Actualizada' }).eq('id', id);
     if (error) console.log(error);
   };
 
-  const handleCaptureLead = async () => {
-    const names = ["Distribuidora San Juan", "Rotisería El Rey KFC", "Comedores Industriales SA", "Carnes Express GDL"];
-    const name = names[Math.floor(Math.random() * names.length)];
+  const submitSimulatedLead = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!simName || !simPhone || !simMsg) return;
+
     const assignedAgent = agents[leads.length % agents.length].name;
     const score = Math.floor(Math.random() * 30) + 70; // 70-100
 
     const { error } = await supabase.from('leads').insert([{
-      from_address: `demo_${Date.now()}@altepsa.com`,
-      from_name: name,
-      phone: '5213318213624',
+      from_address: `sim_${Date.now()}@altepsa.com`,
+      from_name: simName,
+      phone: simPhone,
       source: 'WhatsApp_AI',
       score: score,
       stage: 'Nuevo',
-      action_status: 'IA_Respondiendo',
+      action_status: 'En Espera de Asesor',
       assigned_agent: assignedAgent,
-      body_preview: 'Requiero media tonelada de pollo en canal calibre 4 para mañana urgente, ¿tienen disponibilidad e Invoices fiscales?'
+      body_preview: simMsg
     }]);
 
-    if (error) alert("Error capturando: " + error.message);
-    else fetchLeads();
+    if (!error) {
+      setShowSimulateModal(false);
+      setSimName(""); setSimPhone(""); setSimMsg("");
+      fetchLeads();
+    } else {
+      alert("Error de inserción: " + error.message);
+    }
   };
 
   const generateAISuggestion = () => {
     setAiGenerating(true);
     setAiSuggestion("");
+    setMsgSuccess(false);
     setTimeout(() => {
-      setAiSuggestion(`¡Hola ${selectedLead?.from_name?.split(' ')[0] || 'Cliente'}! 🍗 Confirmado. Sí contamos con disponibilidad inmediata de Pollo en Canal y facturación CFDI 4.0. Nuestro envío sale de la central de Guadalajara mañana a primera hora si cerramos pedido hoy. ¿Les genero de una vez su cotización por la media tonelada? Quedo a sus órdenes.`);
+      setAiSuggestion(`¡Hola ${selectedLead?.from_name?.split(' ')[0] || 'Cliente'}! 🍗 Confirmado. Sí contamos con disponibilidad inmediata de cortes y canal con facturación electrónica. Podemos procesar tu pedido hoy mismo para entrega rápida. ¿Te genero una cotización formal?`);
       setAiGenerating(false);
     }, 1500);
+  };
+
+  const deliverWhatsAppMessage = async () => {
+    if (!aiSuggestion || !selectedLead?.phone) return;
+    setSendingMsg(true);
+    try {
+      const response = await fetch('/api/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: selectedLead.phone, text: aiSuggestion })
+      });
+      const data = await response.json();
+      if (data.success) {
+        setMsgSuccess(true);
+        setAiSuggestion("");
+      } else {
+        alert('Error al enviar el mensaje: ' + JSON.stringify(data.error));
+      }
+    } catch (err) {
+      alert('Fallo de conexión al enviar WhatsApp.');
+    } finally {
+      setSendingMsg(false);
+    }
   };
 
   useEffect(() => {
@@ -103,33 +140,32 @@ export default function Home() {
 
   const getSLAWarning = (createdAt: string) => {
     const diffMins = Math.floor((new Date().getTime() - new Date(createdAt).getTime()) / 60000);
-    if (diffMins > 15) return { level: 'critical', text: 'SLA VENCIDO (>15m)', color: 'text-red-500 bg-red-500/10 border-red-500/20' };
-    if (diffMins > 5) return { level: 'warning', text: 'ATENCIÓN (>5m)', color: 'text-amber-500 bg-amber-500/10 border-amber-500/20' };
+    if (diffMins > 15) return { level: 'critical', text: 'ATENCIÓN RETRASADA', color: 'text-[#E30613] bg-[#E30613]/10 border-[#E30613]/20' };
+    if (diffMins > 5) return { level: 'warning', text: 'TIEMPO EXCEDIDO', color: 'text-[#FFCC00] bg-[#FFCC00]/10 border-[#FFCC00]/20' };
     return null;
   };
 
   if (!mounted) return null;
 
   return (
-    <div className="min-h-screen text-zinc-300 font-sans selection:bg-emerald-500/30 selection:text-emerald-200 bg-[#09090b] overflow-hidden flex flex-col">
-      {/* Dynamic Backgrounds */}
+    <div className="min-h-screen text-zinc-300 font-sans selection:bg-[#E30613]/30 selection:text-white bg-[#09090b] overflow-hidden flex flex-col">
       <div className="subtle-grid" />
-      <div className="fixed inset-0 z-0 bg-gradient-to-br from-indigo-500/5 via-transparent to-emerald-500/5 pointer-events-none" />
+      <div className="fixed inset-0 z-0 bg-gradient-to-br from-[#E30613]/5 via-transparent to-[#FFCC00]/5 pointer-events-none" />
 
       {/* Top Navbar */}
       <header className="relative z-40 bg-[#09090b]/80 backdrop-blur-xl border-b border-white/5 h-16 flex items-center justify-between px-6 shrink-0">
         <div className="flex items-center gap-8">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center shadow-[0_0_15px_rgba(255,255,255,0.05)]">
-              <Command size={16} className="text-white" />
+            <div className="w-10 h-10 rounded-lg bg-zinc-950 border border-zinc-800 flex items-center justify-center shadow-[0_0_15px_rgba(227,6,19,0.15)] overflow-hidden">
+              <img src="/altepsa-logo.png" alt="ALTEPSA" className="w-full h-full object-cover filter contrast-125" onError={(e) => { e.currentTarget.src = 'https://via.placeholder.com/40x40?text=AL'; }} />
             </div>
             <div>
-              <h1 className="text-sm font-semibold text-white tracking-wide">
-                ALTEPSA <span className="text-emerald-500 font-mono tracking-tighter">/ ELITE</span>
+              <h1 className="text-sm font-bold text-white tracking-wide">
+                ALTEPSA <span className="text-[#E30613] font-black tracking-tighter">COMEX</span>
               </h1>
               <div className="flex items-center gap-1.5 text-[9px] uppercase font-mono tracking-widest text-zinc-500">
-                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
-                Live Network Gdl
+                <span className="w-1.5 h-1.5 bg-[#FFCC00] rounded-full animate-pulse shadow-[0_0_8px_rgba(255,204,0,0.8)]" />
+                Matriz Operativa - CRM
               </div>
             </div>
           </div>
@@ -139,7 +175,7 @@ export default function Home() {
               <button
                 key={item}
                 onClick={() => setActiveTab(item.toLowerCase())}
-                className={`px-4 py-1.5 rounded-md text-xs font-medium transition-all ${activeTab === item.toLowerCase() ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-white'}`}
+                className={`px-4 py-1.5 rounded-md text-xs font-bold uppercase tracking-widest transition-all ${activeTab === item.toLowerCase() ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-white'}`}
               >
                 {item}
               </button>
@@ -149,30 +185,91 @@ export default function Home() {
 
         <div className="flex items-center gap-4">
           <div className="hidden sm:flex items-center gap-3 px-3 py-1.5 bg-zinc-900/50 border border-zinc-800 rounded-lg text-xs font-mono text-zinc-400">
-            <Clock size={12} className="text-emerald-500" />
+            <Clock size={12} className="text-[#FFCC00]" />
             {currentTime.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })} CST
           </div>
-          <button onClick={handleCaptureLead} className="group relative px-4 py-1.5 bg-white hover:bg-zinc-200 text-black text-xs font-bold rounded-lg transition-all flex items-center gap-2">
-            <Plus size={14} className="group-hover:rotate-90 transition-transform" />
-            Ingresar Lead
+          <button onClick={() => setShowSimulateModal(true)} className="group relative px-4 py-1.5 bg-gradient-to-r from-[#E30613] to-[#B0000A] text-white text-xs font-bold rounded-lg transition-all flex items-center gap-2 shadow-lg shadow-red-900/20 hover:scale-105">
+            <MessageSquare size={14} className="group-hover:rotate-12 transition-transform" />
+            Simulador Chat
           </button>
         </div>
       </header>
 
-      {/* Main Workspace */}
+      {/* Main Workspace based on Tabs */}
       <main className="flex-1 flex overflow-hidden relative z-10 w-full">
+        {activeTab === 'inbox' && <InboxView />}
+        {activeTab === 'pipeline' && <PipelineView />}
+        {activeTab === 'analytics' && <AnalyticsView />}
+        {activeTab === 'agents' && <AgentsView />}
+      </main>
 
-        {/* Left Sidebar: Smart Logic & Routing */}
-        <aside className="w-64 border-r border-white/5 bg-zinc-950/30 backdrop-blur-3xl hidden lg:flex flex-col shrink-0 overflow-y-auto custom-scrollbar">
-          <div className="p-5">
-            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-4 flex items-center gap-2">
-              <Zap size={12} className="text-blue-500" /> Enrutamiento IA
+      {/* MODAL SIMULAR CONVERSACIÓN */}
+      <AnimatePresence>
+        {showSimulateModal && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+            <motion.form
+              initial={{ scale: 0.95, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 20 }}
+              onSubmit={submitSimulatedLead}
+              className="w-full max-w-md bg-zinc-950 border border-white/10 rounded-2xl shadow-2xl overflow-hidden p-6"
+            >
+              <div className="flex justify-between items-center mb-6">
+                <div>
+                  <h3 className="text-lg font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                    <MessageSquare className="text-[#25D366]" /> Ingresar Prospecto
+                  </h3>
+                  <p className="text-xs text-zinc-400 mt-1">Sustituye la captura vía WhatsApp para pruebas locales.</p>
+                </div>
+                <button type="button" onClick={() => setShowSimulateModal(false)} className="text-zinc-500 hover:text-white"><X size={20} /></button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="text-[10px] font-black uppercase text-zinc-500 block mb-1">Nombre Comercial</label>
+                  <input required value={simName} onChange={e => setSimName(e.target.value)} type="text" placeholder="Ej. Distribuidora El Paisa" className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2 text-sm text-white outline-none focus:border-[#FFCC00]" />
+                </div>
+                <div>
+                  <label className="text-[10px] font-black uppercase text-zinc-500 block mb-1">WhatsApp de Contacto</label>
+                  <input required value={simPhone} onChange={e => setSimPhone(e.target.value)} type="tel" placeholder="Ej. 5213318213624" className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2 text-sm text-white font-mono outline-none focus:border-[#FFCC00]" />
+                </div>
+                <div>
+                  <label className="text-[10px] font-black uppercase text-zinc-500 block mb-1">Mensaje Recibido (Contexto)</label>
+                  <textarea required value={simMsg} onChange={e => setSimMsg(e.target.value)} placeholder="Ej. Tienen pollo en canal calibre 4?" className="w-full h-24 bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2 text-sm text-white outline-none focus:border-[#FFCC00] resize-none" />
+                </div>
+              </div>
+
+              <div className="mt-8 flex gap-3">
+                <button type="button" onClick={() => setShowSimulateModal(false)} className="flex-1 py-2 rounded-lg bg-zinc-900 text-zinc-400 text-xs font-bold uppercase hover:bg-zinc-800">Cancelar</button>
+                <button type="submit" className="flex-1 py-2 rounded-lg bg-[#25D366] text-white text-xs font-black uppercase tracking-widest hover:bg-[#1DA851] flex justify-center items-center gap-2">
+                  <Send size={14} /> Simular Chat
+                </button>
+              </div>
+            </motion.form>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+
+  // VIEWS COMPONENTS -> Enclosed functions for cleaner structure
+
+  function InboxView() {
+    return (
+      <>
+        {/* Enrutamiento Status Sidebar */}
+        <aside className="w-64 border-r border-white/5 bg-zinc-950/30 backdrop-blur-3xl hidden lg:flex flex-col shrink-0 overflow-y-auto custom-scrollbar relative">
+          <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-[#E30613]/10 to-transparent pointer-events-none" />
+          <div className="p-5 relative z-10">
+            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-[#E30613] mb-4 flex items-center gap-2">
+              <Gauge size={12} /> Desempeño Global
             </h3>
 
             <div className="space-y-4">
               {agents.map(agent => (
-                <div key={agent.id} className="p-3 bg-zinc-900/40 border border-zinc-800/50 rounded-xl">
-                  <div className="flex justify-between items-start mb-2">
+                <div key={agent.id} className="p-3 bg-zinc-900/40 border border-zinc-800/50 rounded-xl relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 p-2 opacity-5 scale-150 rotate-12 group-hover:rotate-0 transition-transform"><Target size={32} /></div>
+                  <div className="flex justify-between items-start mb-2 relative z-10">
                     <div className="flex items-center gap-2">
                       <div className={`w-6 h-6 rounded-md ${agent.bg} ${agent.border} border flex items-center justify-center text-[9px] font-bold ${agent.color}`}>
                         {agent.avatar}
@@ -182,52 +279,45 @@ export default function Home() {
                         <p className="text-[9px] text-zinc-500">{agent.lastSeen}</p>
                       </div>
                     </div>
-                    <span className="text-[10px] font-mono font-bold text-zinc-400">{agent.active} Leads</span>
                   </div>
-                  {/* Capacity Bar */}
-                  <div className="h-1 bg-zinc-800 rounded-full overflow-hidden">
+                  <div className="h-1 bg-zinc-800 rounded-full overflow-hidden mt-1 max-w-[80%]">
                     <div className={`h-full ${agent.color.replace('text', 'bg')}`} style={{ width: `${agent.capacity}%`, opacity: 0.8 }} />
                   </div>
                 </div>
               ))}
             </div>
 
-            <div className="mt-8 p-4 bg-emerald-500/5 border border-emerald-500/10 rounded-xl relative overflow-hidden group">
-              <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform"><BrainCircuit size={48} /></div>
-              <h4 className="text-[10px] font-black uppercase text-emerald-500 mb-1 tracking-widest">Estado Del Sistema</h4>
-              <p className="text-xs text-zinc-400 font-medium">Auto-asignación Round Robin: <span className="text-emerald-400">ÓPTIMO</span></p>
-              <div className="mt-3 flex gap-2 w-full h-8 items-end">
-                {[40, 70, 45, 90, 65, 80, 100].map((h, i) => (
-                  <div key={i} className="flex-1 bg-gradient-to-t from-emerald-500/50 to-emerald-400 rounded-t-sm" style={{ height: `${h}%` }} />
-                ))}
+            <div className="mt-8 p-4 bg-zinc-900/50 border border-zinc-800 rounded-xl relative overflow-hidden">
+              <h4 className="text-[10px] font-black uppercase text-zinc-400 mb-2 tracking-widest text-center">Nodos Operativos</h4>
+              {/* Dynamic SVG Animation for 'Impacto Visual' */}
+              <div className="h-24 w-full relative flex items-center justify-center">
+                <svg viewBox="0 0 100 100" className="w-[80%] h-full opacity-50">
+                  <path d="M50 10 L10 50 L50 90 L90 50 Z" stroke="#E30613" strokeWidth="1" fill="none" className="animate-[dash_4s_linear_infinite]" strokeDasharray="10" />
+                  <circle cx="50" cy="50" r="15" fill="#FFCC00" className="animate-pulse opacity-20" />
+                  <circle cx="50" cy="50" r="5" fill="#FFCC00" />
+                  <circle cx="10" cy="50" r="3" fill="#E30613" />
+                  <circle cx="90" cy="50" r="3" fill="#E30613" />
+                  <circle cx="50" cy="10" r="3" fill="#E30613" />
+                  <circle cx="50" cy="90" r="3" fill="#E30613" />
+                </svg>
+                <style dangerouslySetInnerHTML={{ __html: `@keyframes dash { to { stroke-dashoffset: -40; } }` }} />
               </div>
             </div>
           </div>
         </aside>
 
-        {/* Center Canvas: Unified Inbox / List */}
+        {/* Central List */}
         <section className="flex-1 flex flex-col bg-zinc-900/10 overflow-hidden relative">
-          {/* Filters/Toolbar */}
           <div className="h-14 border-b border-white/5 px-6 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-2 text-zinc-400">
               <Search size={16} />
-              <input type="text" placeholder="Buscar prospectos, teléfonos o mensajes..." className="bg-transparent border-none outline-none text-sm text-white placeholder:text-zinc-600 w-64 md:w-96 font-medium" />
+              <input type="text" placeholder="Búsqueda Inteligente..." className="bg-transparent border-none outline-none text-sm text-white placeholder:text-zinc-600 w-64 md:w-96 font-medium" />
             </div>
-            <div className="flex items-center gap-3">
-              <button className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-zinc-900 border border-zinc-800 text-xs font-semibold hover:bg-zinc-800 transition-colors">
-                <Filter size={14} /> Filtros
-              </button>
-            </div>
+            <span className="text-[10px] uppercase font-mono text-zinc-600">{leads.length} prospectos hoy</span>
           </div>
 
-          {/* List Area */}
-          <div className="flex-1 overflow-y-auto p-4 md:p-6 custom-scrollbar space-y-3">
-            {loading ? (
-              <div className="flex flex-col items-center justify-center h-full opacity-50">
-                <div className="w-12 h-12 border-2 border-zinc-800 border-t-emerald-500 rounded-full animate-spin mb-4" />
-                <p className="text-xs font-mono uppercase tracking-widest text-zinc-500">Cargando base de datos neural...</p>
-              </div>
-            ) : leads.map(lead => {
+          <div className="flex-1 overflow-y-auto p-4 md:p-6 custom-scrollbar space-y-3 relative z-10">
+            {leads.map(lead => {
               const warning = getSLAWarning(lead.created_at || new Date().toISOString());
               const isSelected = selectedLead?.id === lead.id;
 
@@ -235,54 +325,36 @@ export default function Home() {
                 <div
                   key={lead.id}
                   onClick={() => setSelectedLead(lead)}
-                  className={`group relative p-4 rounded-xl transition-all cursor-pointer flex gap-4 items-center glass-panel hover:bg-zinc-800/80 ${isSelected ? 'animated-border bg-zinc-800/80' : ''}`}
+                  className={`group relative p-4 rounded-xl transition-all cursor-pointer flex gap-4 items-center bg-zinc-900/40 border border-white/5 hover:bg-zinc-800 hover:border-white/10 ${isSelected ? 'border-[#E30613]/50 bg-gradient-to-r from-[#E30613]/10 to-zinc-900' : ''}`}
                 >
-                  {/* Lead Score Radial */}
-                  <div className="shrink-0 relative w-12 h-12 flex items-center justify-center">
-                    <svg className="w-full h-full transform -rotate-90">
-                      <circle cx="24" cy="24" r="20" className="stroke-zinc-800" strokeWidth="4" fill="none" />
-                      <motion.circle
-                        cx="24" cy="24" r="20"
-                        strokeWidth="4" fill="none"
-                        strokeDasharray={125.6}
-                        initial={{ strokeDashoffset: 125.6 }}
-                        animate={{ strokeDashoffset: 125.6 - (125.6 * (lead.score || 0)) / 100 }}
-                        className={lead.score > 80 ? 'stroke-emerald-500' : lead.score > 50 ? 'stroke-blue-500' : 'stroke-red-500'}
-                        strokeLinecap="round"
-                      />
-                    </svg>
-                    <span className="absolute text-[11px] font-mono font-bold text-white">{lead.score}</span>
+                  <div className="shrink-0 relative w-12 h-12 flex items-center justify-center bg-zinc-950 rounded-full border border-zinc-800">
+                    <span className={`text-[11px] font-mono font-bold ${lead.score > 80 ? 'text-[#FFCC00]' : 'text-zinc-400'}`}>{lead.score}</span>
+                    {lead.score > 80 && <div className="absolute inset-0 rounded-full ring-1 ring-[#FFCC00]/50 animate-ping opacity-20" />}
                   </div>
 
-                  {/* Core Info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-1">
-                      <h4 className="text-sm font-semibold text-white truncate">{lead.from_name || 'Prospecto Web'}</h4>
+                      <h4 className="text-sm font-bold text-white truncate uppercase tracking-tight">{lead.from_name || 'Prospecto Cautivo'}</h4>
                       {warning && lead.stage === 'Nuevo' && (
-                        <span className={`px-2 py-0.5 rounded text-[9px] font-black tracking-widest uppercase border ${warning.color} animate-pulse`}>
+                        <span className={`px-2 py-0.5 rounded text-[9px] font-black tracking-widest uppercase border ${warning.color}`}>
                           {warning.text}
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-zinc-400 truncate italic pr-4">
-                      "{lead.body_preview || 'Revisando requerimientos...'}"
+                    <p className="text-xs text-zinc-400 truncate font-mono">
+                      <MessageSquare size={10} className="inline mr-1 text-zinc-500" />
+                      {lead.body_preview || 'Sin historial'}
                     </p>
                   </div>
 
-                  {/* Metadata */}
                   <div className="hidden md:flex flex-col items-end gap-2 shrink-0">
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] bg-zinc-900 border border-zinc-700/50 text-zinc-300 px-2 py-0.5 rounded-full font-medium">
-                        {lead.stage || 'MQL'}
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-black uppercase tracking-widest ${lead.stage === 'Cierre' ? 'bg-[#FFCC00]/10 text-[#FFCC00] border border-[#FFCC00]/20' : 'bg-zinc-950 border border-zinc-700 text-zinc-300'}`}>
+                        {lead.stage || 'Nuevo'}
                       </span>
-                      <div className="flex items-center gap-1.5 text-xs text-zinc-500 font-medium">
-                        <MessageSquare size={12} className={lead.source === 'WhatsApp_AI' ? 'text-[#25D366]' : ''} />
-                        {new Date(lead.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </div>
                     </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                      <span className="text-[10px] text-zinc-500 font-mono">{lead.assigned_agent || 'Auto'}</span>
+                    <div className="flex items-center gap-1.5 text-xs text-zinc-500 font-mono">
+                      <Phone size={10} /> {lead.phone}
                     </div>
                   </div>
                 </div>
@@ -291,7 +363,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Right Slide-over: 360 CRM Profile */}
+        {/* Right CRM Panel */}
         <AnimatePresence>
           {selectedLead && (
             <motion.aside
@@ -299,144 +371,113 @@ export default function Home() {
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: 400, opacity: 0 }}
               transition={{ type: 'spring', damping: 30, stiffness: 250 }}
-              className="w-full md:w-[480px] bg-zinc-950 border-l border-white/10 shrink-0 flex flex-col absolute right-0 top-0 bottom-0 z-50 shadow-2xl"
+              className="w-full md:w-[480px] bg-zinc-950 border-l border-zinc-800 shrink-0 flex flex-col absolute right-0 top-0 bottom-0 z-50 shadow-2xl"
             >
-              {/* Header */}
-              <div className="p-6 border-b border-white/5 flex items-start justify-between relative overflow-hidden bg-zinc-900/20">
-                <div className="absolute -top-24 -right-24 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl" />
+              {/* Profile Header */}
+              <div className="p-6 border-b border-zinc-800 bg-black flex flex-col justify-end relative h-40 overflow-hidden">
+                <div className="absolute inset-0 z-0">
+                  <img src="/pollo1.jpg" alt="Fondo" className="w-full h-full object-cover opacity-10 grayscale hover:grayscale-0 hover:opacity-20 transition-all duration-700" onError={(e) => { e.currentTarget.style.display = 'none' }} />
+                  <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 to-transparent" />
+                </div>
+                <button onClick={() => setSelectedLead(null)} className="absolute top-4 right-4 p-2 bg-black/50 hover:bg-zinc-800 rounded-full text-white z-20 backdrop-blur-md transition-colors"><X size={16} /></button>
 
-                <div className="relative z-10 w-full">
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-zinc-800 to-zinc-900 border border-zinc-700 flex items-center justify-center text-xl font-bold shadow-lg text-white">
-                      {(selectedLead.from_name || 'S')[0]}
-                    </div>
-                    <button onClick={() => setSelectedLead(null)} className="p-2 hover:bg-zinc-800 rounded-full text-zinc-500 hover:text-white transition-colors">
-                      <X size={18} />
-                    </button>
+                <div className="relative z-10 flex items-end gap-4 mt-auto">
+                  <div className="w-16 h-16 rounded-xl bg-[#E30613] text-white flex items-center justify-center text-2xl font-black shadow-lg shadow-red-900/40 uppercase">
+                    {(selectedLead.from_name || 'S')[0]}
                   </div>
-                  <h2 className="text-xl font-bold text-white mb-1 truncate pr-4">{selectedLead.from_name}</h2>
-                  <div className="flex items-center gap-4 text-xs font-mono text-zinc-400">
-                    <span className="flex items-center gap-1.5"><Phone size={12} className="text-[#25D366]" /> {selectedLead.phone}</span>
-                    <span className="flex items-center gap-1.5"><CheckCircle2 size={12} className="text-blue-500" /> Validado</span>
+                  <div>
+                    <h2 className="text-2xl font-black text-white leading-none uppercase tracking-tighter mb-1">{selectedLead.from_name}</h2>
+                    <span className="text-xs text-zinc-400 font-mono">{selectedLead.phone}</span>
                   </div>
                 </div>
               </div>
 
-              {/* CRM Content */}
-              <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-8">
+              {/* Data & Actions */}
+              <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-8 bg-zinc-950">
 
-                {/* Score & Stage Control */}
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-zinc-900/50 border border-zinc-800/50 p-4 rounded-2xl">
-                    <p className="text-[10px] uppercase font-black tracking-widest text-zinc-500 mb-2">Predictive Score</p>
-                    <div className="flex items-end gap-3">
-                      <span className={`text-3xl font-black ${selectedLead.score > 80 ? 'text-emerald-400' : 'text-blue-400'}`}>
-                        {selectedLead.score}
-                      </span>
-                      <span className="text-xs text-zinc-400 font-mono mb-1.5">/ 100</span>
-                    </div>
-                    <div className="h-1 bg-zinc-800 rounded-full mt-3 overflow-hidden">
-                      <div className={`h-full ${selectedLead.score > 80 ? 'bg-emerald-500' : 'bg-blue-500'}`} style={{ width: `${selectedLead.score}%` }} />
-                    </div>
+                  <div className="bg-zinc-900 border border-zinc-800 p-4 rounded-xl shadow-inner">
+                    <p className="text-[9px] uppercase font-black tracking-[0.2em] text-zinc-500 mb-2">Valor Estimado</p>
+                    <span className="text-xl font-black text-[#FFCC00] font-mono">{selectedLead.score > 80 ? '$45k' : '$12k'} MXN</span>
                   </div>
-
-                  <div className="bg-zinc-900/50 border border-zinc-800/50 p-4 rounded-2xl flex flex-col justify-between">
-                    <p className="text-[10px] uppercase font-black tracking-widest text-zinc-500 mb-2">Etapa del negocio</p>
+                  <div className="bg-zinc-900 border border-zinc-800 p-4 rounded-xl flex flex-col justify-center">
+                    <p className="text-[9px] uppercase font-black tracking-[0.2em] text-zinc-500 mb-2">Estado</p>
                     <select
                       value={selectedLead.stage || 'Nuevo'}
                       onChange={(e) => updateLeadStage(selectedLead.id, e.target.value)}
-                      className="w-full bg-zinc-950 border border-zinc-700 text-sm font-semibold text-white px-3 py-2 rounded-lg outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 appearance-none"
+                      className="bg-zinc-950 border border-zinc-800 text-sm font-bold text-white px-2 py-1 rounded select-none outline-none focus:border-[#E30613]"
                     >
                       {STAGES.map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
                   </div>
                 </div>
 
-                {/* AI Nudging & Suggestions */}
-                <div className="bg-gradient-to-br from-indigo-500/10 to-indigo-900/5 rounded-2xl border border-indigo-500/20 p-5 relative overflow-hidden">
-                  <div className="absolute top-0 right-0 p-3 opacity-20"><Bot size={80} /></div>
-                  <h4 className="text-[11px] font-black uppercase tracking-widest text-indigo-400 flex items-center gap-2 mb-4">
-                    <Sparkles size={14} /> Asistente Elite
+                {/* AI Generative Area */}
+                <div className="bg-[#111] rounded-2xl border border-white/5 p-5">
+                  <h4 className="text-[11px] font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2 mb-4">
+                    <BrainCircuit size={14} className="text-[#FFCC00]" /> Inteligencia Comercial
                   </h4>
 
-                  <div className="bg-zinc-950/50 border border-zinc-800 rounded-xl p-4 mb-4 backdrop-blur-sm relative z-10">
-                    <p className="text-xs text-zinc-300 leading-relaxed font-medium">
-                      "{selectedLead.body_preview || 'Lead capturado, esperando primer punto de contacto.'}"
+                  <div className="bg-zinc-950 border border-zinc-800 rounded-lg p-3 mb-4">
+                    <p className="text-xs text-zinc-300 italic font-medium leading-relaxed">
+                      "{selectedLead.body_preview}"
                     </p>
                   </div>
 
-                  {!aiSuggestion && !aiGenerating && (
-                    <button
-                      onClick={generateAISuggestion}
-                      className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold transition-all shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-2 relative z-10"
-                    >
-                      <BrainCircuit size={14} /> Generar Respuesta Rápida
+                  {!aiSuggestion && !aiGenerating && !msgSuccess && (
+                    <button onClick={generateAISuggestion} className="w-full py-3 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 hover:border-zinc-500 text-white rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2">
+                      Generar Respuesta Persuasiva
                     </button>
                   )}
 
                   {aiGenerating && (
-                    <div className="w-full py-2.5 bg-indigo-900/50 text-indigo-200 rounded-lg text-xs font-bold flex items-center justify-center gap-2 border border-indigo-500/30">
-                      <div className="w-4 h-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
-                      Analizando contexto y generando...
+                    <div className="w-full py-4 text-zinc-400 text-xs font-mono flex flex-col items-center gap-2">
+                      <span className="w-5 h-5 border-2 border-[#E30613] border-t-transparent rounded-full animate-spin" />
+                      Sintetizando catálogo ALTEPSA...
                     </div>
                   )}
 
-                  {aiSuggestion && (
-                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="relative z-10">
+                  {msgSuccess && (
+                    <div className="w-full py-4 bg-green-500/10 border border-green-500/30 text-green-400 rounded-lg flex items-center justify-center gap-2 text-xs font-bold">
+                      <CheckCircle2 size={16} /> Mensaje WhatsApp Enviado Exitosamente.
+                    </div>
+                  )}
+
+                  {aiSuggestion && !msgSuccess && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                       <textarea
+                        readOnly
                         value={aiSuggestion}
-                        onChange={(e) => setAiSuggestion(e.target.value)}
-                        className="w-full h-28 bg-zinc-950/80 border border-indigo-500/40 rounded-xl p-3 text-xs text-indigo-100 placeholder:text-zinc-600 outline-none focus:border-indigo-400 resize-none custom-scrollbar shadow-inner"
+                        className="w-full h-24 bg-zinc-950 border border-[#E30613]/30 rounded-lg p-3 text-xs text-zinc-200 outline-none resize-none"
                       />
-                      <div className="flex gap-2 mt-3">
-                        <button onClick={() => setAiSuggestion('')} className="px-3 py-2 text-xs font-semibold text-zinc-400 hover:text-white transition-colors">Descartar</button>
-                        <button className="flex-1 py-2 bg-[#25D366] hover:bg-[#128C7E] text-white rounded-lg text-xs font-bold transition-all shadow-lg shadow-green-500/20 flex items-center justify-center gap-2">
-                          <Send size={14} /> Enviar a WhatsApp
-                        </button>
-                      </div>
+                      <button
+                        onClick={deliverWhatsAppMessage}
+                        disabled={sendingMsg}
+                        className="w-full mt-3 py-3 bg-[#25D366] hover:bg-[#1DA851] disabled:opacity-50 disabled:cursor-wait text-white rounded-lg text-xs font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(37,211,102,0.3)]">
+                        {sendingMsg ? 'Conectando...' : <><Send size={14} /> Enviar a Cliente</>}
+                      </button>
                     </motion.div>
                   )}
                 </div>
 
-                {/* Unified Timeline */}
+                {/* Timeline */}
                 <div>
-                  <h4 className="text-[11px] font-black uppercase tracking-widest text-zinc-500 mb-6 border-b border-zinc-800 pb-3">Timeline Unificada</h4>
-
-                  <div className="relative border-l border-zinc-800 ml-3 md:ml-4 space-y-8 pb-4">
-
-                    <div className="relative pl-6">
-                      <span className="absolute -left-[17px] top-1 flex items-center justify-center w-8 h-8 rounded-full bg-zinc-900 border-2 border-zinc-800 text-emerald-500 shadow-lg shadow-emerald-500/10">
-                        <PlayCircle size={14} />
-                      </span>
-                      <h5 className="text-sm font-semibold text-white mb-1 leading-none">Inicio de Sesión</h5>
-                      <span className="text-[10px] text-zinc-500 font-mono">{new Date(selectedLead.created_at).toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' })}</span>
-
-                      {selectedLead.source === 'WhatsApp_AI' && (
-                        <div className="mt-3 bg-zinc-900 border border-zinc-800 rounded-lg p-3 text-xs text-zinc-400">
-                          <span className="text-emerald-400 font-medium">WhatsApp Bridge:</span> Mensaje recibido procesado vía Evolution API
-                        </div>
-                      )}
+                  <h4 className="text-[11px] font-black uppercase tracking-widest text-zinc-500 mb-4 border-b border-zinc-800 pb-2">Log de Acciones</h4>
+                  <div className="space-y-4 font-mono text-xs">
+                    <div className="flex gap-3">
+                      <span className="text-zinc-600 shrink-0">{new Date(selectedLead.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                      <div>
+                        <p className="text-zinc-300 font-bold">Receptor Inteligente</p>
+                        <p className="text-zinc-500">Contacto originado en WhatsApp, perfil creado.</p>
+                      </div>
                     </div>
-
-                    <div className="relative pl-6">
-                      <span className="absolute -left-[17px] top-1 flex items-center justify-center w-8 h-8 rounded-full bg-zinc-900 border-2 border-zinc-800 text-blue-500">
-                        <ShieldCheck size={14} />
-                      </span>
-                      <h5 className="text-sm font-semibold text-white mb-1 leading-none">Smart Assignment</h5>
-                      <span className="text-[10px] text-zinc-500 font-mono">+1 min detectado</span>
-                      <p className="mt-2 text-xs text-zinc-400 leading-relaxed">
-                        Evaluación del volumen de ventas. Asignado predictivamente a <strong className="text-white">{selectedLead.assigned_agent || 'Agente'}</strong> basado en carga de trabajo.
-                      </p>
+                    <div className="flex gap-3">
+                      <span className="text-zinc-600 shrink-0">Auto</span>
+                      <div>
+                        <p className="text-[#FFCC00] font-bold">Asignación Distribuida</p>
+                        <p className="text-zinc-500">Responsable asignado: {selectedLead.assigned_agent || 'IA'}</p>
+                      </div>
                     </div>
-
-                    <div className="relative pl-6">
-                      <span className="absolute -left-[17px] top-1 flex items-center justify-center w-8 h-8 rounded-full bg-zinc-900 border-2 border-zinc-800 text-amber-500">
-                        <Activity size={14} />
-                      </span>
-                      <h5 className="text-sm font-semibold text-white mb-1 leading-none">{selectedLead.action_status || 'En espera'}</h5>
-                      <span className="text-[10px] text-amber-500 font-mono font-bold animate-pulse">ALERTA SLA SI NO HAY CONTACTO</span>
-                    </div>
-
                   </div>
                 </div>
 
@@ -444,8 +485,104 @@ export default function Home() {
             </motion.aside>
           )}
         </AnimatePresence>
+      </>
+    );
+  }
 
-      </main>
-    </div>
-  );
+  function PipelineView() {
+    return (
+      <div className="flex-1 p-6 overflow-x-auto overflow-y-hidden flex gap-6 mt-4">
+        {STAGES.map(stage => (
+          <div key={stage} className="w-80 min-w-80 shrink-0 flex flex-col h-full bg-zinc-900/30 border border-white/5 rounded-2xl relative">
+            <div className="p-4 border-b border-white/5 flex justify-between items-center backdrop-blur-sm bg-black/50 rounded-t-2xl">
+              <h3 className="text-sm font-black uppercase tracking-widest text-white">{stage}</h3>
+              <span className="bg-[#E30613]/20 text-[#E30613] px-2 py-0.5 rounded text-[10px] font-bold">{leads.filter(l => l.stage === stage).length}</span>
+            </div>
+            <div className="flex-1 p-3 overflow-y-auto space-y-3 custom-scrollbar">
+              {leads.filter(l => (l.stage || 'Nuevo') === stage).map(lead => (
+                <div key={lead.id} className="bg-zinc-950 border border-zinc-800 p-3 rounded-xl cursor-grab active:cursor-grabbing hover:border-zinc-600 shadow-sm">
+                  <div className="flex justify-between items-start mb-2">
+                    <h4 className="text-sm font-bold text-white truncate max-w-[80%]">{lead.from_name}</h4>
+                    {lead.score > 80 && <Sparkles size={12} className="text-[#FFCC00]" />}
+                  </div>
+                  <p className="text-[10px] text-zinc-500 font-mono mb-2 truncate">{lead.phone}</p>
+                  <div className="flex items-center gap-2 mt-2 pt-2 border-t border-zinc-900">
+                    <div className="w-4 h-4 rounded bg-zinc-800 text-[8px] flex items-center justify-center font-bold text-white uppercase">{(lead.assigned_agent || 'I')[0]}</div>
+                    <span className="text-[9px] text-zinc-400 truncate">{lead.assigned_agent || 'Sin asignar'}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  function AnalyticsView() {
+    return (
+      <div className="flex-1 overflow-y-auto p-8 space-y-8 bg-zinc-950 h-full">
+        <h2 className="text-2xl font-black uppercase tracking-wider text-white flex items-center gap-3">
+          <BarChart2 className="text-[#E30613]" /> Panel Estratégico
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-black border border-zinc-800 p-6 rounded-2xl relative overflow-hidden group">
+            <div className="absolute top-0 right-0 p-4 opacity-10 scale-150 rotate-12 group-hover:rotate-0 transition-transform text-[#FFCC00]"><TrendingUp size={64} /></div>
+            <p className="text-xs font-black uppercase tracking-widest text-zinc-500 mb-1">Volumen Desplazado</p>
+            <p className="text-4xl font-black text-white">12.5 <span className="text-lg text-zinc-500">Ton</span></p>
+          </div>
+          <div className="bg-black border border-zinc-800 p-6 rounded-2xl relative overflow-hidden group">
+            <div className="absolute top-0 right-0 p-4 opacity-10 scale-150 rotate-12 group-hover:rotate-0 transition-transform text-[#E30613]"><Target size={64} /></div>
+            <p className="text-xs font-black uppercase tracking-widest text-zinc-500 mb-1">Tasa Cierre IA</p>
+            <p className="text-4xl font-black text-white">48% <span className="text-lg text-emerald-500">↑ 12%</span></p>
+          </div>
+          <div className="bg-black border border-zinc-800 p-6 rounded-2xl relative flex flex-col justify-end min-h-[140px] overflow-hidden">
+            <div className="absolute inset-0 opacity-40 mix-blend-luminosity">
+              <img src="/pollo2.jpg" alt="Planta" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none' }} />
+            </div>
+            <div className="relative z-10 bg-black/60 backdrop-blur-md p-3 -m-6 rounded-b-2xl border-t border-white/10">
+              <p className="text-[10px] font-black uppercase tracking-widest text-white flex items-center gap-2"><MapPin size={12} className="text-[#E30613]" /> Planta Central Activa</p>
+            </div>
+          </div>
+        </div>
+        {/* Visualizer Mock */}
+        <div className="h-64 border border-zinc-800 rounded-2xl bg-zinc-900/50 flex items-end justify-between p-6 gap-2 opacity-80">
+          {[30, 45, 20, 60, 80, 50, 95, 40, 70, 85, 55, 100].map((h, i) => (
+            <motion.div key={i} initial={{ height: 0 }} animate={{ height: `${h}%` }} transition={{ delay: i * 0.05, duration: 1 }} className="w-full bg-[#E30613]/80 rounded-t-sm" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  function AgentsView() {
+    return (
+      <div className="flex-1 p-8 bg-zinc-950 h-full overflow-y-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+          {agents.map(a => (
+            <div key={a.id} className="bg-black border border-zinc-800 rounded-2xl p-6 relative overflow-hidden group">
+              <div className="absolute -bottom-10 -right-10 w-32 h-32 rounded-full border-[20px] border-zinc-900 opacity-50 group-hover:scale-150 transition-all duration-700" />
+              <div className="flex items-center gap-4 mb-6 relative z-10">
+                <div className={`w-14 h-14 rounded-xl ${a.bg} flex items-center justify-center text-xl font-black ${a.color} border ${a.border}`}>{a.avatar}</div>
+                <div>
+                  <h3 className="text-lg font-bold text-white">{a.name}</h3>
+                  <span className="text-xs text-zinc-500 font-mono flex items-center gap-1.5"><Activity size={10} className="text-[#25D366]" /> {a.lastSeen}</span>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4 relative z-10">
+                <div className="bg-zinc-900 p-3 rounded-xl border border-zinc-800/80">
+                  <p className="text-[9px] uppercase tracking-widest text-zinc-500 mb-1">Ventas MTD</p>
+                  <p className="text-sm font-bold text-white">{a.sales}</p>
+                </div>
+                <div className="bg-zinc-900 p-3 rounded-xl border border-zinc-800/80">
+                  <p className="text-[9px] uppercase tracking-widest text-zinc-500 mb-1">Conversión</p>
+                  <p className="text-sm font-bold text-white">{a.conversion}</p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 }
