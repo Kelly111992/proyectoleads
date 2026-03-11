@@ -78,11 +78,11 @@ export async function POST(req: Request) {
                         console.error('⚠️ Error insertando lead:', insertErr.message);
                     } else {
                         console.log('💾 Lead guardado en Supabase');
-                        // Intentar agregar campos CRM (pueden no existir aún)
+                        // Intentar agregar campos CRM
                         try {
                             await supabase
                                 .from('leads')
-                                .update({ assigned_to: assignedTo, priority: 'Media', last_follow_up: new Date().toISOString() })
+                                .update({ assigned_agent: assignedTo })
                                 .eq('phone', phone);
                             console.log('📋 Campos CRM asignados');
                         } catch { console.log('ℹ️ Campos CRM opcionales no disponibles'); }

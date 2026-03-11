@@ -63,8 +63,9 @@ export default function Home() {
     try {
       setLoading(true);
       const { data, error } = await supabase
-        .from('elite_leads_view')
-        .select('*');
+        .from('leads')
+        .select('*')
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
       setLeads(data || []);
@@ -78,7 +79,7 @@ export default function Home() {
 
   const calculateStats = (data: any[]) => {
     const total = data.length;
-    const qualified = data.filter(l => l.type === 'Qualified' || l.type === 'SQL').length;
+    const qualified = data.filter(l => l.stage?.includes('Qualified') || l.stage === 'SQL').length;
     const conversion = total > 0 ? ((qualified / total) * 100).toFixed(1) + "%" : "0%";
     const projected = (qualified * 1500).toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
 
@@ -127,7 +128,7 @@ export default function Home() {
       await supabase
         .from('leads')
         .update({
-          assigned_to: vendedorName,
+          assigned_agent: vendedorName,
           action_status: 'Asignado'
         })
         .eq('id', leadId);
@@ -163,8 +164,7 @@ export default function Home() {
       score: Math.floor(Math.random() * 40) + 60,
       stage: 'MQL',
       action_status: 'Asignado',
-      assigned_to: assignedTo,
-      priority: Math.random() > 0.7 ? 'Alta' : 'Media',
+      assigned_agent: assignedTo,
       body_preview: `Busco información sobre ${product}`
     }]);
 
@@ -501,7 +501,7 @@ function CRMView({ leads, vendedores, onAssign, onSend }: any) {
               <div className="flex-1">
                 <h6 className="font-black text-gray-800 uppercase tracking-tighter">{lead.from_name}</h6>
                 <p className="text-[10px] text-gray-400 font-bold flex items-center gap-2">
-                  Último contacto: {lead.last_follow_up ? new Date(lead.last_follow_up).toLocaleDateString() : 'Pendiente'}
+                  Último contacto: {lead.created_at ? new Date(lead.created_at).toLocaleDateString() : 'Pendiente'}
                 </p>
               </div>
               <div className="flex items-center gap-4">
@@ -509,7 +509,7 @@ function CRMView({ leads, vendedores, onAssign, onSend }: any) {
                   <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Responsable</div>
                   <div className="flex items-center gap-2">
                     <select
-                      value={lead.assigned_to || ""}
+                      value={lead.assigned_agent || ""}
                       onChange={(e) => onAssign(lead.id, e.target.value)}
                       className="text-[10px] font-black uppercase bg-gray-100 border-none rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-[#E30613] appearance-none cursor-pointer"
                     >
@@ -602,7 +602,7 @@ function LeadCardItem({ lead, onSend, vendedores, onAssign }: any) {
           <div className="flex items-center gap-2 bg-gray-50 px-3 py-1 rounded-lg border border-gray-100">
             <User size={12} className="text-gray-400" />
             <span className="text-[10px] font-black text-gray-600 uppercase tracking-tighter">
-              {lead.assigned_to || (
+              {lead.assigned_agent || (
                 <select
                   className="bg-transparent border-none p-0 text-[10px] focus:ring-0 appearance-none cursor-pointer"
                   onChange={(e) => onAssign(lead.id, e.target.value)}
