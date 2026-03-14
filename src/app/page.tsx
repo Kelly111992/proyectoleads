@@ -446,7 +446,7 @@ export default function Home() {
                 <div
                   key={lead.id}
                   onClick={() => setSelectedLead(lead)}
-                  className={`relative p-4 rounded-2xl border transition-all cursor-pointer group bg-zinc-900/40 hover:bg-zinc-800/60 ${isSelected ? 'bg-zinc-800 ring-2 ring-[#E30613]/30 border-[#E30613]' : warning ? tempColors[warning.level] : 'border-white/5'}`}
+                  className={`relative p-4 rounded-2xl border transition-all cursor-pointer group bg-zinc-900/40 hover:bg-zinc-800/60 ${isSelected ? 'bg-zinc-800 ring-2 ring-[#E30613]/30 border-[#E30613]' : warning ? tempColors[warning.level as keyof typeof tempColors] : 'border-white/5'}`}
                 >
                   <div className="flex justify-between items-start mb-2">
                     <div className="flex items-center gap-2">
