@@ -6,7 +6,11 @@ const sb = createClient(
 
 (async () => {
     // Buscar un lead guardado recientemente
-    const { data } = await sb.from('leads').select('*').order('created_at', { ascending: false }).limit(20);
+    const { data } = await sb.from('leads')
+        .select('*')
+        .not('source', 'in', '("inmuebles24","easybroker","vivanuncios","otros")')
+        .order('created_at', { ascending: false })
+        .limit(20);
     const set = new Set();
     data.forEach(l => {
         set.add(l.source);
