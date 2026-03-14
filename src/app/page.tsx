@@ -423,252 +423,175 @@ export default function Home() {
 
   function InboxView() {
     return (
-      <>
-        {/* Enrutamiento Status Sidebar */}
-        <aside className="w-64 border-r border-white/5 bg-zinc-950/30 backdrop-blur-3xl hidden lg:flex flex-col shrink-0 overflow-y-auto custom-scrollbar relative">
-          <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-[#E30613]/10 to-transparent pointer-events-none" />
-          <div className="p-5 relative z-10">
-            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-[#E30613] mb-4 flex items-center gap-2">
-              <Gauge size={12} /> Desempeño Global
-            </h3>
-
-            <div className="space-y-4">
-              {agents.map(agent => (
-                <div key={agent.id} className="p-3 bg-zinc-900/40 border border-zinc-800/50 rounded-xl relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 p-2 opacity-5 scale-150 rotate-12 group-hover:rotate-0 transition-transform"><Target size={32} /></div>
-                  <div className="flex justify-between items-start mb-2 relative z-10">
-                    <div className="flex items-center gap-2">
-                      <div className={`w-6 h-6 rounded-md ${agent.bg} ${agent.border} border flex items-center justify-center text-[9px] font-bold ${agent.color}`}>
-                        {agent.avatar}
-                      </div>
-                      <div>
-                        <p className="text-xs font-semibold text-white">{agent.name}</p>
-                        <p className="text-[9px] text-zinc-500">{agent.lastSeen}</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="h-1 bg-zinc-800 rounded-full overflow-hidden mt-1 max-w-[80%]">
-                    <div className={`h-full ${agent.color.replace('text', 'bg')}`} style={{ width: `${agent.capacity}%`, opacity: 0.8 }} />
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-8 p-4 bg-zinc-900/50 border border-zinc-800 rounded-xl relative overflow-hidden">
-              <h4 className="text-[10px] font-black uppercase text-zinc-400 mb-2 tracking-widest text-center">Nodos Operativos</h4>
-              {/* Dynamic SVG Animation for 'Impacto Visual' */}
-              <div className="h-24 w-full relative flex items-center justify-center">
-                <svg viewBox="0 0 100 100" className="w-[80%] h-full opacity-50">
-                  <path d="M50 10 L10 50 L50 90 L90 50 Z" stroke="#E30613" strokeWidth="1" fill="none" className="animate-[dash_4s_linear_infinite]" strokeDasharray="10" />
-                  <circle cx="50" cy="50" r="15" fill="#FFCC00" className="animate-pulse opacity-20" />
-                  <circle cx="50" cy="50" r="5" fill="#FFCC00" />
-                  <circle cx="10" cy="50" r="3" fill="#E30613" />
-                  <circle cx="90" cy="50" r="3" fill="#E30613" />
-                  <circle cx="50" cy="10" r="3" fill="#E30613" />
-                  <circle cx="50" cy="90" r="3" fill="#E30613" />
-                </svg>
-                <style dangerouslySetInnerHTML={{ __html: `@keyframes dash { to { stroke-dashoffset: -40; } }` }} />
-              </div>
-            </div>
-          </div>
-        </aside>
-
-        {/* Central List */}
-        <section className="flex-1 flex flex-col bg-zinc-900/10 overflow-hidden relative">
-          <div className="h-14 border-b border-white/5 px-6 flex items-center justify-between shrink-0">
-            <div className="flex items-center gap-2 text-zinc-400">
-              <Search size={16} />
-              <input type="text" placeholder="Búsqueda Inteligente..." className="bg-transparent border-none outline-none text-sm text-white placeholder:text-zinc-600 w-64 md:w-96 font-medium" />
-            </div>
-            <span className="text-[10px] uppercase font-mono text-zinc-600">{leads.length} prospectos hoy</span>
+      <div className="flex-1 flex overflow-hidden bg-black/20">
+        {/* Left Column: Leads List with Temperature */}
+        <aside className="w-[380px] border-r border-white/5 flex flex-col bg-zinc-950/20 backdrop-blur-3xl shrink-0 h-full relative z-10">
+          <div className="p-4 border-b border-white/5 flex items-center justify-between bg-black/40">
+            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">Prospectos Omnicanal</h3>
+            <span className="text-[10px] font-mono text-zinc-600 bg-zinc-900 px-2 py-0.5 rounded">{leads.length} activos</span>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4 md:p-6 custom-scrollbar space-y-3 relative z-10">
+          <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-3">
             {leads.map(lead => {
-              const warning = getSLAWarning(lead.created_at || new Date().toISOString());
+              const warning = getSLAWarning(lead.created_at);
               const isSelected = selectedLead?.id === lead.id;
+
+              const tempColors = {
+                critical: 'border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.15)] animate-pulse',
+                warning: 'border-amber-500/50 shadow-[0_0_10px_rgba(245,158,11,0.1)]',
+                normal: 'border-zinc-800'
+              };
 
               return (
                 <div
                   key={lead.id}
                   onClick={() => setSelectedLead(lead)}
-                  className={`group relative p-4 rounded-xl transition-all cursor-pointer flex gap-4 items-center bg-zinc-900/40 border border-white/5 hover:bg-zinc-800 hover:border-white/10 ${isSelected ? 'border-[#E30613]/50 bg-gradient-to-r from-[#E30613]/10 to-zinc-900' : ''}`}
+                  className={`relative p-4 rounded-2xl border transition-all cursor-pointer group bg-zinc-900/40 hover:bg-zinc-800/60 ${isSelected ? 'bg-zinc-800 ring-2 ring-[#E30613]/30 border-[#E30613]' : warning ? tempColors[warning.level] : 'border-white/5'}`}
                 >
-                  <div className="shrink-0 relative w-12 h-12 flex items-center justify-center bg-zinc-950 rounded-full border border-zinc-800">
-                    <span className={`text-[11px] font-mono font-bold ${lead.score > 80 ? 'text-[#FFCC00]' : 'text-zinc-400'}`}>{lead.score}</span>
-                    {lead.score > 80 && <div className="absolute inset-0 rounded-full ring-1 ring-[#FFCC00]/50 animate-ping opacity-20" />}
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3 mb-1">
-                      <h4 className="text-sm font-bold text-white truncate uppercase tracking-tight">{lead.from_name || 'Prospecto Cautivo'}</h4>
-                      {warning && lead.stage === 'Nuevo' && (
-                        <span className={`px-2 py-0.5 rounded text-[9px] font-black tracking-widest uppercase border ${warning.color}`}>
-                          {warning.text}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs text-zinc-400 truncate font-mono">
-                      <MessageSquare size={10} className="inline mr-1 text-zinc-500" />
-                      {lead.body_preview || 'Sin historial'}
-                    </p>
-                  </div>
-
-                  <div className="hidden md:flex flex-col items-end gap-2 shrink-0">
+                  <div className="flex justify-between items-start mb-2">
                     <div className="flex items-center gap-2">
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-black uppercase tracking-widest ${lead.stage === 'Cierre' ? 'bg-[#FFCC00]/10 text-[#FFCC00] border border-[#FFCC00]/20' : 'bg-zinc-950 border border-zinc-700 text-zinc-300'}`}>
-                        {lead.stage || 'Nuevo'}
+                      <div className={`w-2 h-2 rounded-full ${warning?.level === 'critical' ? 'bg-red-500 shadow-[0_0_8px_red]' : warning?.level === 'warning' ? 'bg-amber-500 shadow-[0_0_8px_orange]' : 'bg-emerald-500 shadow-[0_0_8px_emerald]'}`} />
+                      <h4 className="text-xs font-black text-white uppercase tracking-tight">{lead.from_name}</h4>
+                    </div>
+                    <span className="text-[9px] font-mono text-zinc-600 italic">#{lead.id.toString().slice(-4)}</span>
+                  </div>
+
+                  <p className="text-[11px] text-zinc-400 truncate mb-3 font-medium">"{lead.body_preview || 'Iniciando contacto...'}"</p>
+
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[9px] font-black uppercase text-zinc-600 bg-white/5 px-2 py-0.5 rounded tracking-tighter">
+                        {lead.source}
                       </span>
                     </div>
-                    <div className="flex items-center gap-1.5 text-xs text-zinc-500 font-mono">
-                      <Phone size={10} /> {lead.phone}
+                    <div className="flex items-center gap-1.5 text-[10px] text-zinc-500 font-mono">
+                      <Clock size={10} /> {new Date(lead.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </div>
                   </div>
                 </div>
-              )
+              );
             })}
           </div>
+        </aside>
+
+        {/* Center Column: Conversation History & Speed-to-Lead */}
+        <section className="flex-1 flex flex-col relative h-full">
+          {!selectedLead ? (
+            <div className="flex-1 flex flex-col items-center justify-center text-center p-12 space-y-4">
+              <div className="w-20 h-20 bg-zinc-900 rounded-full flex items-center justify-center text-zinc-800">
+                <BrainCircuit size={40} />
+              </div>
+              <div>
+                <h3 className="text-sm font-black text-white uppercase tracking-widest">Esperando Selección</h3>
+                <p className="text-xs text-zinc-500 max-w-[280px]">Selecciona un lead de la columna izquierda para iniciar la gestión operativa.</p>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Header con botón Speed-to-Lead */}
+              <div className="h-20 border-b border-white/5 px-8 flex items-center justify-between bg-black/40 backdrop-blur-md shrink-0">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center font-black text-white">{selectedLead.from_name[0]}</div>
+                  <div>
+                    <h3 className="text-sm font-black text-white uppercase tracking-wider">{selectedLead.from_name}</h3>
+                    <p className="text-[10px] text-zinc-500 uppercase font-mono tracking-widest">{selectedLead.assigned_agent || 'Sin Asignar'}</p>
+                  </div>
+                </div>
+
+                {(!selectedLead.assigned_agent || selectedLead.assigned_agent === 'IA de Ventas') && (
+                  <button
+                    onClick={async () => {
+                      const myName = "Arkel Sales"; // Hardcoded for demo
+                      await updateLeadStage(selectedLead.id, 'Nuevo'); // Refresh state
+                      const { error } = await supabase.from('leads').update({ assigned_agent: myName, action_status: 'Tomado por Asesor' }).eq('id', selectedLead.id);
+                      if (!error) setSelectedLead({ ...selectedLead, assigned_agent: myName });
+                    }}
+                    className="bg-[#E30613] hover:bg-red-700 text-white px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] shadow-lg shadow-red-900/30 flex items-center gap-2 group transition-all transform hover:scale-105"
+                  >
+                    <Zap size={14} className="group-hover:animate-pulse" /> Tomar Lead (Speed-to-Lead)
+                  </button>
+                )}
+              </div>
+
+              {/* Chat View Layout */}
+              <div className="flex-1 overflow-y-auto p-8 space-y-6 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] bg-fixed opacity-90">
+                {/* Simulated Conversation Blocks */}
+                <div className="flex flex-col space-y-4">
+                  <div className="flex justify-start">
+                    <div className="max-w-[70%] bg-zinc-900 border border-zinc-800 p-4 rounded-2xl rounded-tl-none">
+                      <p className="text-xs text-zinc-300 leading-relaxed font-medium">
+                        {selectedLead.body_preview}
+                      </p>
+                      <span className="text-[8px] text-zinc-600 block mt-2 font-mono uppercase">Enviado vía {selectedLead.source}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end">
+                    <div className="max-w-[70%] bg-[#E30613]/10 border border-[#E30613]/30 p-4 rounded-2xl rounded-tr-none">
+                      <p className="text-xs text-zinc-200 leading-relaxed font-medium italic">
+                        "Hola {selectedLead.from_name.split(' ')[0]}, el sistema ya capturó tu interés. Un especialista de ALTEPSA se comunicará contigo de forma inmediata."
+                      </p>
+                      <span className="text-[8px] text-[#E30613] block mt-2 font-mono uppercase">Respuesta Automática n8n</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* CRM Action Bar Input */}
+              <div className="p-6 bg-black border-t border-zinc-900 selection:bg-[#E30613]">
+                <div className="flex items-center gap-4 bg-zinc-900 rounded-2xl p-2 pl-4 border border-zinc-800 focus-within:border-[#E30613] transition-all">
+                  <input type="text" placeholder="Escribe tu respuesta comercial..." className="flex-1 bg-transparent border-none outline-none text-xs text-white placeholder:text-zinc-600 py-3" />
+                  <button className="h-10 px-6 bg-zinc-800 hover:bg-zinc-700 text-white text-[10px] font-black uppercase rounded-xl transition-all">Responder</button>
+                </div>
+              </div>
+            </>
+          )}
         </section>
 
-        {/* Right CRM Panel */}
-        <AnimatePresence>
-          {selectedLead && (
-            <motion.aside
-              initial={{ x: 400, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              exit={{ x: 400, opacity: 0 }}
-              transition={{ type: 'spring', damping: 30, stiffness: 250 }}
-              className="w-full md:w-[480px] bg-zinc-950 border-l border-zinc-800 shrink-0 flex flex-col absolute right-0 top-0 bottom-0 z-50 shadow-2xl"
-            >
-              <div className="p-6 border-b border-zinc-800 bg-black flex flex-col justify-end relative h-40 overflow-hidden">
-                <div className="absolute inset-0 z-0">
-                  <img src="/5.png" alt="Fondo" className="w-full h-full object-cover opacity-10 grayscale hover:grayscale-0 hover:opacity-20 transition-all duration-700" onError={(e) => { e.currentTarget.style.display = 'none' }} />
-                  <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 to-transparent" />
-                </div>
-                <button onClick={() => setSelectedLead(null)} className="absolute top-4 right-4 p-2 bg-black/50 hover:bg-zinc-800 rounded-full text-white z-20 backdrop-blur-md transition-colors"><X size={16} /></button>
+        {/* Column 3: Lead Profile (Shared from selectedLead modal logic) */}
+        {selectedLead && (
+          <aside className="w-[320px] bg-black border-l border-zinc-900 shrink-0 hidden xl:flex flex-col">
+            {/* Profile content stays similar but adapted to sidebar */}
+            <div className="p-6 border-b border-zinc-900">
+              <div className="w-16 h-16 rounded-2xl bg-zinc-900 mb-4 flex items-center justify-center text-2xl font-black text-white border border-zinc-800 shadow-inner">
+                {selectedLead.from_name[0]}
+              </div>
+              <h2 className="text-lg font-black text-white uppercase tracking-tighter mb-1">{selectedLead.from_name}</h2>
+              <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">{selectedLead.phone}</p>
+            </div>
 
-                <div className="relative z-10 flex items-end gap-5 mt-auto">
-                  <div className="w-20 h-20 rounded-2xl bg-[#E30613] text-white flex items-center justify-center text-3xl font-black shadow-2xl shadow-red-900/60 uppercase border-2 border-white/10 transform -rotate-3 transition-transform hover:rotate-0">
-                    {(selectedLead.from_name || 'S')[0]}
-                  </div>
-                  <div className="pb-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h2 className="text-3xl font-black text-white leading-none uppercase tracking-tighter">{selectedLead.from_name}</h2>
-                      <div className="px-2 py-0.5 bg-emerald-500/20 border border-emerald-500/30 rounded text-[9px] font-black text-emerald-400">CONTACTO ACTIVO</div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-xs text-zinc-400 font-mono flex items-center gap-1.5"><Phone size={12} className="text-[#FFCC00]" /> {selectedLead.phone}</span>
-                      <span className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest bg-white/5 px-2 py-0.5 rounded">ID: {selectedLead.id.toString().padStart(4, '0')}</span>
-                    </div>
-                  </div>
+            <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
+              <div className="bg-zinc-900/50 p-4 rounded-xl border border-zinc-800">
+                <p className="text-[8px] uppercase font-black tracking-widest text-[#FFCC00] mb-2">Score de Compra</p>
+                <div className="flex items-end gap-1 font-mono">
+                  <span className="text-2xl font-black text-white leading-none">{selectedLead.score}</span>
+                  <span className="text-[10px] text-zinc-600">/ 100</span>
                 </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-8 bg-zinc-950">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-zinc-900 border border-zinc-800 p-5 rounded-2xl shadow-inner relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 p-2 opacity-5 -mr-2 -mt-2 group-hover:opacity-10 transition-opacity"><TrendingUp size={48} /></div>
-                    <p className="text-[9px] uppercase font-black tracking-[0.2em] text-[#FFCC00] mb-2">Valor Estimado</p>
-                    <span className="text-2xl font-black text-white font-mono">{selectedLead.score > 80 ? '$45,200' : '$12,850'} <span className="text-xs text-zinc-500">MXN</span></span>
-                  </div>
-                  <div className="bg-zinc-900 border border-zinc-800 p-5 rounded-2xl flex flex-col justify-center relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 p-2 opacity-5 -mr-2 -mt-2 group-hover:opacity-10 transition-opacity"><Target size={48} /></div>
-                    <p className="text-[9px] uppercase font-black tracking-[0.2em] text-[#E30613] mb-2">Etapa del Trato</p>
-                    <select
-                      value={selectedLead.stage || 'Nuevo'}
-                      onChange={(e) => updateLeadStage(selectedLead.id, e.target.value)}
-                      className="bg-black border border-zinc-800 text-sm font-black text-white px-2 py-2 rounded-xl select-none outline-none focus:border-[#E30613] cursor-pointer appearance-none text-center"
-                    >
-                      {STAGES.map(s => <option key={s} value={s}>{s.toUpperCase()}</option>)}
-                    </select>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 mb-4 px-1">Propiedades del Contacto</h4>
-                  <div className="bg-zinc-900/30 border border-zinc-800/50 rounded-2xl p-4 space-y-4">
-                    <div className="flex justify-between items-center border-b border-zinc-800 pb-3">
-                      <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Fuente Original</span>
-                      <span className="text-xs text-white font-black bg-white/5 px-2 py-1 rounded">WHATSAPP CLOUD</span>
-                    </div>
-                    <div className="flex justify-between items-center border-b border-zinc-800 pb-3">
-                      <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Propietario</span>
-                      <span className="text-xs text-[#FFCC00] font-black">{selectedLead.assigned_agent || 'Sin Asignar'}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Calificación</span>
-                      <div className="flex items-center gap-1">
-                        {[1, 2, 3, 4, 5].map(i => <Sparkles key={i} size={10} className={i <= (selectedLead.score / 20) ? 'text-[#FFCC00]' : 'text-zinc-800'} />)}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-black/40 rounded-3xl border border-white/5 p-6 shadow-2xl relative overflow-hidden">
-                  <div className="absolute top-0 right-0 p-4 opacity-5"><Zap size={40} className="text-[#FFCC00]" /></div>
-                  <h4 className="text-[11px] font-black uppercase tracking-widest text-[#FFCC00] flex items-center gap-2 mb-5">
-                    <BrainCircuit size={16} className="animate-pulse" /> Resumen Estratégico AI
-                  </h4>
-
-                  <div className="bg-zinc-950 border border-zinc-800/80 rounded-2xl p-4 mb-5 shadow-inner">
-                    <p className="text-xs text-zinc-300 italic font-medium leading-relaxed">
-                      "{selectedLead.body_preview}"
-                    </p>
-                  </div>
-
-                  {!aiSuggestion && !aiGenerating && !msgSuccess && (
-                    <button onClick={generateAISuggestion} className="w-full py-3 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 hover:border-zinc-500 text-white rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2">
-                      Generar Respuesta Persuasiva
-                    </button>
-                  )}
-
-                  {aiGenerating && (
-                    <div className="w-full py-4 text-zinc-400 text-xs font-mono flex flex-col items-center gap-2">
-                      <span className="w-5 h-5 border-2 border-[#E30613] border-t-transparent rounded-full animate-spin" />
-                      Sintetizando catálogo ALTEPSA...
-                    </div>
-                  )}
-
-                  {msgSuccess && (
-                    <div className="w-full py-4 bg-green-500/10 border border-green-500/30 text-green-400 rounded-lg flex items-center justify-center gap-2 text-xs font-bold">
-                      <CheckCircle2 size={16} /> Mensaje WhatsApp Enviado.
-                    </div>
-                  )}
-
-                  {aiSuggestion && !msgSuccess && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                      <textarea
-                        readOnly
-                        value={aiSuggestion}
-                        className="w-full h-24 bg-zinc-950 border border-[#E30613]/30 rounded-lg p-3 text-xs text-zinc-200 outline-none resize-none"
-                      />
-                      <button
-                        onClick={deliverWhatsAppMessage}
-                        disabled={sendingMsg}
-                        className="w-full mt-3 py-3 bg-[#25D366] hover:bg-[#1DA851] disabled:opacity-50 disabled:cursor-wait text-white rounded-lg text-xs font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(37,211,102,0.3)]">
-                        {sendingMsg ? 'Conectando...' : <><Send size={14} /> Enviar a Cliente</>}
-                      </button>
-                    </motion.div>
-                  )}
-                </div>
-
-                <div>
-                  <h4 className="text-[11px] font-black uppercase tracking-widest text-zinc-500 mb-4 border-b border-zinc-800 pb-2">Log de Acciones</h4>
-                  <div className="space-y-4 font-mono text-xs">
-                    <div className="flex gap-3">
-                      <span className="text-zinc-600 shrink-0">{new Date(selectedLead.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                      <div>
-                        <p className="text-zinc-300 font-bold">Receptor Inteligente</p>
-                        <p className="text-zinc-500">Contacto detectado.</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+              <div className="space-y-4">
+                <h4 className="text-[8px] font-black uppercase tracking-[0.3em] text-zinc-600">Gestión de Pipeline</h4>
+                <select
+                  value={selectedLead.stage || 'Nuevo'}
+                  onChange={(e) => updateLeadStage(selectedLead.id, e.target.value)}
+                  className="w-full bg-black border border-zinc-800 text-[10px] font-black text-white px-2 py-3 rounded-xl select-none outline-none focus:border-[#E30613] cursor-pointer"
+                >
+                  {STAGES.map(s => <option key={s} value={s}>{s.toUpperCase()}</option>)}
+                </select>
               </div>
-            </motion.aside>
-          )}
-        </AnimatePresence>
-      </>
+
+              <div className="pt-4 space-y-3">
+                <button className="w-full py-3 bg-white/5 hover:bg-white/10 text-white text-[9px] font-black uppercase tracking-widest rounded-xl transition-all border border-white/5 flex items-center justify-center gap-2">
+                  <FileText size={12} /> Ver Expediente
+                </button>
+                <button className="w-full py-3 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 text-[9px] font-black uppercase tracking-widest rounded-xl transition-all border border-zinc-800">
+                  Transferir Lead
+                </button>
+              </div>
+            </div>
+          </aside>
+        )}
+      </div>
     );
   }
 
