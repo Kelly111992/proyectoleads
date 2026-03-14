@@ -122,7 +122,7 @@ export default function Home() {
       from_address: `sim_${Date.now()}@altepsa.com`,
       from_name: simName,
       phone: simPhone,
-      source: 'WhatsApp_AI',
+      source: 'whatsapp',
       score: score,
       stage: 'Nuevo',
       action_status: 'IA_Conversando',
@@ -280,7 +280,7 @@ export default function Home() {
           </div>
 
           <nav className="hidden md:flex items-center bg-zinc-900/50 p-1 rounded-lg border border-zinc-800/50">
-            {['Inbox', 'Pipeline', 'Analytics', 'Agents'].map((item) => (
+            {['Inbox', 'Pipeline', 'Analytics', 'Agents', 'Automations'].map((item) => (
               <button
                 key={item}
                 onClick={() => setActiveTab(item.toLowerCase())}
@@ -310,6 +310,7 @@ export default function Home() {
         {activeTab === 'pipeline' && <PipelineView />}
         {activeTab === 'analytics' && <AnalyticsView />}
         {activeTab === 'agents' && <AgentsView />}
+        {activeTab === 'automations' && <AutomationsView />}
       </main>
 
       {/* MODAL SIMULAR CONVERSACIÓN CHAT UI */}
@@ -858,6 +859,155 @@ export default function Home() {
           ))}
         </div>
       </div>
+    );
+  }
+
+  function AutomationsView() {
+    const triggers = [
+      { id: 'fb', name: 'Facebook Ads Trigger', source: 'facebook', status: 'active', lag: '250ms', icon: <Target size={18} />, color: 'text-blue-500' },
+      { id: 'web', name: 'Web Form Tracker', source: 'web', status: 'active', lag: '120ms', icon: <Globe size={18} />, color: 'text-emerald-500' },
+      { id: 'wa', name: 'WhatsApp Webhook', source: 'whatsapp', status: 'active', lag: '80ms', icon: <MessageSquare size={18} />, color: 'text-[#25D366]' },
+      { id: 'manual', name: 'Manual Entry Signal', source: 'telefono', status: 'standby', lag: 'N/A', icon: <Phone size={18} />, color: 'text-zinc-500' }
+    ];
+
+    return (
+      <div className="flex-1 p-8 bg-zinc-950 h-full overflow-y-auto custom-scrollbar">
+        <div className="max-w-6xl mx-auto">
+          <header className="flex justify-between items-end mb-12">
+            <div>
+              <div className="flex items-center gap-2 text-[#E30613] text-[10px] font-black uppercase tracking-[0.3em] mb-2">
+                <Zap size={14} className="animate-pulse" /> Automatización de Flujos
+              </div>
+              <h2 className="text-4xl font-black text-white uppercase tracking-tighter leading-none">Primer Contacto <span className="text-zinc-700">Automation</span></h2>
+            </div>
+            <div className="bg-zinc-900/50 border border-zinc-800 p-4 rounded-2xl flex items-center gap-6">
+              <div className="flex flex-col">
+                <span className="text-[9px] font-black uppercase text-zinc-500 tracking-widest mb-1">Status n8n</span>
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 bg-emerald-500 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
+                  <span className="text-xs font-bold text-white uppercase font-mono tracking-tighter text-emerald-400">Online & Sync</span>
+                </div>
+              </div>
+              <div className="w-px h-10 bg-zinc-800" />
+              <button className="bg-white text-black text-xs font-black uppercase px-4 py-2 rounded-lg hover:scale-105 transition-transform shadow-[0_0_20px_rgba(255,255,255,0.1)]">Configurar n8n</button>
+            </div>
+          </header>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+            {triggers.map((t, i) => (
+              <motion.div
+                key={t.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.1 }}
+                className="bg-black border border-zinc-800 p-6 rounded-3xl relative overflow-hidden group hover:border-[#E30613]/50 transition-all shadow-xl"
+              >
+                <div className={`absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-20 transition-opacity ${t.color}`}>{t.icon}</div>
+                <div className="flex flex-col h-full">
+                  <div className={`p-2 w-fit rounded-xl bg-zinc-900 border border-zinc-800 mb-4 ${t.color}`}>{t.icon}</div>
+                  <h3 className="text-sm font-black text-white uppercase tracking-tight mb-1">{t.name}</h3>
+                  <p className="text-[10px] text-zinc-500 font-mono tracking-widest uppercase mb-4">Source: {t.source}</p>
+
+                  <div className="mt-auto pt-4 border-t border-zinc-900 flex justify-between items-center">
+                    <div className="flex items-center gap-1.5 font-mono text-[9px] text-zinc-400">
+                      <Clock size={10} /> {t.lag}
+                    </div>
+                    <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded ${t.status === 'active' ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-zinc-800 text-zinc-500 border border-zinc-700'}`}>
+                      {t.status}
+                    </span>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          <div className="bg-zinc-900/40 border border-zinc-800 p-8 rounded-[2.5rem] relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-32 h-32 bg-[#E30613]/10 rounded-full blur-[80px] -translate-x-1/2 -translate-y-1/2" />
+            <div className="relative z-10 grid grid-cols-1 lg:grid-cols-3 gap-12">
+              <div className="lg:col-span-2">
+                <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-500 mb-8 border-b border-zinc-800 pb-2">Registro de Ejecuciones Automáticas</h4>
+                <div className="space-y-4">
+                  {[
+                    { time: '10:45 AM', lead: 'Juan Pérez', source: 'facebook', event: 'WA Welcome Sent', status: 'Success' },
+                    { time: '10:12 AM', lead: 'Comercializadora MX', source: 'web', event: 'Sales Notify', status: 'Success' },
+                    { time: '09:55 AM', lead: '3314...8912', source: 'whatsapp', event: 'CRM Update', status: 'Success' },
+                    { time: '08:20 AM', lead: 'María Silva', source: 'facebook', event: 'WA Welcome Sent', status: 'Success' }
+                  ].map((log, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-4 bg-black/40 border border-zinc-800/50 rounded-2xl hover:bg-black/60 transition-colors group">
+                      <div className="flex items-center gap-4">
+                        <span className="text-[10px] font-mono text-zinc-600 w-16 group-hover:text-[#FFCC00] transition-colors">{log.time}</span>
+                        <div className="h-4 w-[2px] bg-zinc-800" />
+                        <div>
+                          <p className="text-xs font-bold text-white uppercase tracking-tight">{log.lead}</p>
+                          <p className="text-[9px] text-zinc-500 font-mono uppercase">{log.source} ➜ {log.event}</p>
+                        </div>
+                      </div>
+                      <span className="text-[9px] font-black uppercase text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded border border-emerald-500/20 flex items-center gap-1.5">
+                        <CheckCircle2 size={10} /> {log.status}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-8">
+                <div className="bg-black/60 p-6 rounded-3xl border border-zinc-800">
+                  <h5 className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-6 flex items-center gap-2"><BarChart2 size={12} className="text-[#E30613]" /> Metas de Conversión</h5>
+                  <div className="space-y-6">
+                    <div>
+                      <div className="flex justify-between text-[10px] font-bold uppercase mb-2">
+                        <span className="text-zinc-400">Mensajes de Bienvenida</span>
+                        <span className="text-white">124 / 150</span>
+                      </div>
+                      <div className="w-full h-1.5 bg-zinc-900 rounded-full overflow-hidden">
+                        <div className="h-full bg-gradient-to-r from-[#E30613] to-[#FFCC00] w-[82%]" />
+                      </div>
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-[10px] font-bold uppercase mb-2">
+                        <span className="text-zinc-400">Tasa de Respuesta</span>
+                        <span className="text-white">94.2%</span>
+                      </div>
+                      <div className="w-full h-1.5 bg-zinc-900 rounded-full overflow-hidden">
+                        <div className="h-full bg-emerald-500 w-[94%]" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-zinc-900 border border-[#E30613]/20 p-6 rounded-3xl group cursor-pointer hover:border-[#E30613] transition-colors shadow-2xl shadow-red-950/20">
+                  <p className="text-[9px] font-black uppercase text-[#E30613] tracking-[0.2em] mb-2 flex items-center gap-2">
+                    <Sparkles size={12} className="animate-pulse" /> IA Insights
+                  </p>
+                  <p className="text-[11px] text-zinc-400 font-medium leading-relaxed italic">
+                    "Los leads de <strong className="text-white">Facebook Ads</strong> tienen un 40% más de engagement cuando se contactan en los primeros 120 segundos."
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  function Globe({ size }: { size: number }) {
+    return (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width={size}
+        height={size}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <circle cx="12" cy="12" r="10" />
+        <line x1="2" y1="12" x2="22" y2="12" />
+        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+      </svg>
     );
   }
 }

@@ -48,7 +48,7 @@ export async function POST(req: Request) {
                         from_address: `${phone}@whatsapp.net`,
                         from_name: pushName,
                         phone: phone,
-                        source: 'WhatsApp_AI',
+                        source: 'whatsapp',
                         body_preview: content,
                         score: 85,
                         stage: 'Nuevo', // Emparejado con STAGES[0] de page.tsx
@@ -58,7 +58,26 @@ export async function POST(req: Request) {
 
                 if (upsertErr) console.error('⚠️ CRM Error:', upsertErr.message);
 
-                // ═══ PASO 3: Enviar respuesta WhatsApp ═══
+                // ═══ PASO 3: Disparar Automatización Universal (n8n) ═══
+                const n8nUrl = process.env.N8N_WEBHOOK_URL;
+                if (n8nUrl) {
+                    fetch(n8nUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            event: 'lead.created',
+                            lead: {
+                                id: phone, // temporal si no tenemos el ID real del upsert inmediato
+                                from_name: pushName,
+                                phone: phone,
+                                source: 'whatsapp',
+                                body_preview: content
+                            }
+                        })
+                    }).catch(e => console.error('⚠️ n8n WA trigger failed:', e.message));
+                }
+
+                // ═══ PASO 4: Enviar respuesta WhatsApp ═══
                 try {
                     await evolutionApi.sendMessage(phone, aiResponse);
                 } catch (sendErr: any) {
